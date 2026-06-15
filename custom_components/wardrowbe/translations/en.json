@@ -87,7 +87,7 @@
         "afternoon": "Afternoon",
         "evening": "Evening",
         "night": "Night",
-        "full day": "Full day"
+        "full_day": "Full day"
       }
     },
     "common_colors": {

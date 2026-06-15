@@ -87,7 +87,7 @@
         "afternoon": "오후",
         "evening": "저녁",
         "night": "밤",
-        "full day": "하루 종일"
+        "full_day": "하루 종일"
       }
     },
     "common_colors": {

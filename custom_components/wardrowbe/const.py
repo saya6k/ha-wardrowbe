@@ -144,5 +144,5 @@ VALID_TIME_OF_DAY: Final = (
     "afternoon",
     "evening",
     "night",
-    "full day",
+    "full_day",
 )

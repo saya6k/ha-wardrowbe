@@ -47,7 +47,7 @@ suggest_outfit:
             - afternoon
             - evening
             - night
-            - "full day"
+            - "full_day"
     target_date:
       example: "2026-05-08"
       selector:
