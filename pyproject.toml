@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ha_wardrowbe"
+version = "0.1.0"
+description = "Home Assistant custom component for Wardrowbe"
+readme = "README.md"
+requires-python = ">=3.14"
+license = { text = "MIT" }
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = [
+  "E", "F", "W",      # pycodestyle / pyflakes
+  "I",                # isort
+  "UP",               # pyupgrade
+  "B",                # bugbear
+  "SIM",              # simplify
+  "RUF",              # ruff-specific
+  "PL",               # pylint subset
+  "ANN",              # annotations
+  "ASYNC",
+  "TID",
+]
+ignore = [
+  "ANN401",  # Any allowed in narrow places
+  "PLR2004", # magic numbers in tests are fine
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["ANN", "PL", "S"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["custom_components.wardrowbe"]
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+disallow_any_generics = true
+disallow_subclassing_any = true
+plugins = []
+
+[[tool.mypy.overrides]]
+module = ["homeassistant.*", "voluptuous.*", "pytest_homeassistant_custom_component.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-q"

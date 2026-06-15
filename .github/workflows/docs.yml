@@ -1,0 +1,57 @@
+name: Docs
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/docs.yml'
+      - 'zensical.*.toml'
+      - 'docs/**'
+
+jobs:
+  docs:
+    name: Build & deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Install Zensical
+        run: uv tool install zensical
+
+      - name: Build English
+        run: zensical build -f zensical.en.toml
+
+      - name: Build Korean
+        run: zensical build -f zensical.ko.toml
+
+      - name: Write landing page (/ → /en/)
+        run: |
+          cat > site/index.html <<'HTML'
+          <!doctype html>
+          <html lang="en">
+          <meta charset="utf-8">
+          <meta http-equiv="refresh" content="0; url=./en/">
+          <link rel="canonical" href="./en/">
+          <title>Redirecting…</title>
+          <body>
+            <p>Redirecting to the <a href="./en/">English</a> site (<a href="./ko/">한국어</a>).</p>
+          </body>
+          </html>
+          HTML
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

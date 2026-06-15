@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Lint, type-check, and run the unit-test suite.
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+echo "── ruff ────────────────────────────────────────────"
+ruff check .
+
+echo "── mypy ────────────────────────────────────────────"
+mypy custom_components/wardrowbe || {
+  echo "mypy reported issues (non-fatal during early scaffolding)."
+}
+
+echo "── pytest ──────────────────────────────────────────"
+pytest "$@"

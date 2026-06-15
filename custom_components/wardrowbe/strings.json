@@ -1,0 +1,226 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Wardrowbe — connection",
+        "description": "Enter the URL of your Wardrowbe install and pick how you want to authenticate.",
+        "data": {
+          "host": "Wardrowbe URL",
+          "auth_mode": "Authentication",
+          "verify_ssl": "Verify SSL certificate"
+        }
+      },
+      "oidc": {
+        "title": "Wardrowbe — OIDC",
+        "description": "Provide the OIDC issuer URL and a client registered for Home Assistant. The integration will discover authorize/token URLs automatically. Leave the client secret blank if your OIDC client is registered as a public client using PKCE.",
+        "data": {
+          "issuer_url": "OIDC issuer URL",
+          "client_id": "Client ID",
+          "client_secret": "Client secret (leave blank for PKCE)",
+          "scopes": "Scopes"
+        }
+      },
+      "dev": {
+        "title": "Wardrowbe — development mode",
+        "description": "Only works against Wardrowbe installs running in development authentication mode.",
+        "data": {
+          "external_id": "External ID"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate Wardrowbe",
+        "description": "The stored credentials are no longer valid. Continue to start a new login."
+      }
+    },
+    "error": {
+      "invalid_host": "Host must be a full URL including scheme (http:// or https://).",
+      "cannot_connect": "Could not reach Wardrowbe.",
+      "auth_failed": "Authentication failed.",
+      "issuer_discovery_failed": "Could not load .well-known/openid-configuration from the issuer."
+    },
+    "abort": {
+      "already_configured": "This Wardrowbe account is already configured.",
+      "reauth_account_mismatch": "The account that authenticated does not match the existing entry.",
+      "no_id_token": "OIDC provider did not return an id_token.",
+      "no_user_id": "Wardrowbe did not return a user identifier.",
+      "missing_oidc_config": "Stored OIDC configuration is incomplete; please remove and re-add the entry.",
+      "auth_failed": "Authentication failed.",
+      "cannot_connect": "Could not reach Wardrowbe."
+    }
+  },
+  "selector": {
+    "auth_mode": {
+      "options": {
+        "oidc": "OIDC / SSO",
+        "dev": "Development mode"
+      }
+    },
+    "common_occasions": {
+      "options": {
+        "beach": "Beach",
+        "brunch": "Brunch",
+        "business-casual": "Business casual",
+        "casual": "Casual",
+        "date": "Date",
+        "dinner": "Dinner",
+        "formal": "Formal",
+        "gym": "Gym",
+        "hiking": "Hiking",
+        "interview": "Interview",
+        "lounge": "Lounge",
+        "office": "Office",
+        "outdoor": "Outdoor",
+        "party": "Party",
+        "running": "Running",
+        "smart-casual": "Smart casual",
+        "sport": "Sport",
+        "sporty": "Sporty",
+        "travel": "Travel",
+        "wedding": "Wedding",
+        "weekend": "Weekend",
+        "work": "Work"
+      }
+    },
+    "common_time_of_day": {
+      "options": {
+        "morning": "Morning",
+        "afternoon": "Afternoon",
+        "evening": "Evening",
+        "night": "Night",
+        "full day": "Full day"
+      }
+    },
+    "common_colors": {
+      "options": {
+        "beige": "Beige",
+        "black": "Black",
+        "blue": "Blue",
+        "brown": "Brown",
+        "cream": "Cream",
+        "gold": "Gold",
+        "gray": "Gray",
+        "green": "Green",
+        "khaki": "Khaki",
+        "maroon": "Maroon",
+        "mixed": "Mixed",
+        "multicolor": "Multicolor",
+        "navy": "Navy",
+        "olive": "Olive",
+        "orange": "Orange",
+        "pink": "Pink",
+        "purple": "Purple",
+        "red": "Red",
+        "silver": "Silver",
+        "tan": "Tan",
+        "teal": "Teal",
+        "white": "White",
+        "yellow": "Yellow"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "total_items": { "name": "Total items" },
+      "items_ready": { "name": "Items ready" },
+      "items_processing": { "name": "Items processing" },
+      "items_archived": { "name": "Items archived" },
+      "total_outfits": { "name": "Total outfits" },
+      "outfits_this_week": { "name": "Outfits this week" },
+      "outfits_this_month": { "name": "Outfits this month" },
+      "acceptance_rate": { "name": "Acceptance rate" },
+      "average_rating": { "name": "Average rating" },
+      "total_wears": { "name": "Total wears" },
+      "most_worn_item": { "name": "Most worn item" },
+      "top_color": {
+        "name": "Top color",
+        "state": {
+          "beige": "Beige",
+          "black": "Black",
+          "blue": "Blue",
+          "brown": "Brown",
+          "cream": "Cream",
+          "gold": "Gold",
+          "gray": "Gray",
+          "green": "Green",
+          "khaki": "Khaki",
+          "maroon": "Maroon",
+          "mixed": "Mixed",
+          "multicolor": "Multicolor",
+          "navy": "Navy",
+          "olive": "Olive",
+          "orange": "Orange",
+          "pink": "Pink",
+          "purple": "Purple",
+          "red": "Red",
+          "silver": "Silver",
+          "tan": "Tan",
+          "teal": "Teal",
+          "white": "White",
+          "yellow": "Yellow"
+        }
+      },
+      "last_outfit_status": { "name": "Last outfit status" },
+      "notifications_last_24h": { "name": "Notifications (24h)" }
+    },
+    "binary_sensor": {
+      "api_healthy": { "name": "API healthy" },
+      "has_pending_outfit": { "name": "Pending outfit suggestion" }
+    },
+    "event": {
+      "outfit": { "name": "Outfit lifecycle" },
+      "notification": { "name": "Notification" },
+      "wear": { "name": "Wear logged" },
+      "wash": { "name": "Wash logged" }
+    },
+    "button": {
+      "accept_latest_outfit": { "name": "Accept latest outfit" },
+      "skip_latest_outfit": { "name": "Skip latest outfit" },
+      "reject_latest_outfit": { "name": "Reject latest outfit" }
+    },
+    "todo": {
+      "to_wash": { "name": "Items to wash" }
+    }
+  },
+  "services": {
+    "suggest_outfit": {
+      "name": "Suggest outfit",
+      "description": "Generate a new outfit recommendation."
+    },
+    "accept_outfit": {
+      "name": "Accept outfit",
+      "description": "Mark an outfit recommendation as accepted."
+    },
+    "reject_outfit": {
+      "name": "Reject outfit",
+      "description": "Mark an outfit recommendation as rejected."
+    },
+    "skip_outfit": {
+      "name": "Skip outfit",
+      "description": "Mark an outfit recommendation as skipped."
+    },
+    "submit_feedback": {
+      "name": "Submit outfit feedback",
+      "description": "Submit a rating and optional notes for an outfit."
+    },
+    "log_wear": {
+      "name": "Log wear",
+      "description": "Record a wear event for an item."
+    },
+    "log_wash": {
+      "name": "Log wash",
+      "description": "Record a wash event for an item."
+    },
+    "archive_item": {
+      "name": "Archive item",
+      "description": "Archive an item."
+    },
+    "restore_item": {
+      "name": "Restore item",
+      "description": "Restore a previously archived item."
+    },
+    "test_notification": {
+      "name": "Test notification",
+      "description": "Send a test notification through a configured setting."
+    }
+  }
+}

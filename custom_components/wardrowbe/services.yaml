@@ -1,0 +1,218 @@
+suggest_outfit:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: wardrowbe
+    occasion:
+      example: casual
+      selector:
+        select:
+          translation_key: common_occasions
+          mode: dropdown
+          custom_value: false
+          options:
+            - beach
+            - brunch
+            - business-casual
+            - casual
+            - date
+            - dinner
+            - formal
+            - gym
+            - hiking
+            - interview
+            - lounge
+            - office
+            - outdoor
+            - party
+            - running
+            - smart-casual
+            - sport
+            - sporty
+            - travel
+            - wedding
+            - weekend
+            - work
+    time_of_day:
+      example: morning
+      selector:
+        select:
+          translation_key: common_time_of_day
+          mode: dropdown
+          custom_value: false
+          options:
+            - morning
+            - afternoon
+            - evening
+            - night
+            - "full day"
+    target_date:
+      example: "2026-05-08"
+      selector:
+        date:
+    notes:
+      selector:
+        text:
+          multiline: true
+
+accept_outfit:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: wardrowbe
+    outfit_id:
+      example: "abc123"
+      selector:
+        text:
+
+reject_outfit:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: wardrowbe
+    outfit_id:
+      example: "abc123"
+      selector:
+        text:
+
+skip_outfit:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: wardrowbe
+    outfit_id:
+      example: "abc123"
+      selector:
+        text:
+
+submit_feedback:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: wardrowbe
+    outfit_id:
+      required: true
+      selector:
+        text:
+    rating:
+      selector:
+        number:
+          min: 1
+          max: 5
+          step: 1
+          mode: slider
+    wore:
+      selector:
+        boolean:
+    notes:
+      selector:
+        text:
+          multiline: true
+
+log_wear:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: wardrowbe
+    item_id:
+      required: true
+      selector:
+        text:
+    date:
+      selector:
+        date:
+
+log_wash:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: wardrowbe
+    item_id:
+      required: true
+      selector:
+        text:
+
+archive_item:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: wardrowbe
+    item_id:
+      required: true
+      selector:
+        text:
+    reason:
+      selector:
+        text:
+
+restore_item:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: wardrowbe
+    item_id:
+      required: true
+      selector:
+        text:
+
+test_notification:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: wardrowbe
+    setting_id:
+      required: true
+      selector:
+        text:
+
+get_summary:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: wardrowbe
+    exclude_statuses:
+      example: '["rejected", "skipped"]'
+      selector:
+        select:
+          multiple: true
+          mode: list
+          custom_value: false
+          options:
+            - pending
+            - accepted
+            - rejected
+            - skipped
+    include_statuses:
+      example: '["pending", "accepted"]'
+      selector:
+        select:
+          multiple: true
+          mode: list
+          custom_value: false
+          options:
+            - pending
+            - accepted
+            - rejected
+            - skipped

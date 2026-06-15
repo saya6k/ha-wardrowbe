@@ -1,0 +1,230 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Wardrowbe — 연결",
+        "description": "Wardrowbe 인스턴스 URL을 입력하고 인증 방식을 선택하세요.",
+        "data": {
+          "host": "Wardrowbe URL",
+          "auth_mode": "인증 방식",
+          "verify_ssl": "SSL 인증서 검증"
+        }
+      },
+      "oidc": {
+        "title": "Wardrowbe — OIDC",
+        "description": "OIDC issuer URL과 Home Assistant용으로 등록된 클라이언트 정보를 입력하세요. 인증/토큰 URL은 자동으로 검색됩니다. PKCE 공개 클라이언트로 등록된 경우 클라이언트 시크릿을 비워두세요.",
+        "data": {
+          "issuer_url": "OIDC issuer URL",
+          "client_id": "클라이언트 ID",
+          "client_secret": "클라이언트 시크릿 (PKCE인 경우 비워둠)",
+          "scopes": "Scopes"
+        }
+      },
+      "dev": {
+        "title": "Wardrowbe — 개발 모드",
+        "description": "개발용 인증 모드로 실행 중인 Wardrowbe 인스턴스에서만 동작합니다.",
+        "data": {
+          "external_id": "External ID"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Wardrowbe 재인증",
+        "description": "저장된 인증 정보가 만료되었습니다. 계속하여 다시 로그인하세요."
+      }
+    },
+    "error": {
+      "invalid_host": "URL은 스키마(http:// 또는 https://)를 포함한 전체 주소여야 합니다.",
+      "cannot_connect": "Wardrowbe에 연결할 수 없습니다.",
+      "auth_failed": "인증에 실패했습니다.",
+      "issuer_discovery_failed": "Issuer의 .well-known/openid-configuration을 불러올 수 없습니다."
+    },
+    "abort": {
+      "already_configured": "이 Wardrowbe 계정은 이미 등록되어 있습니다.",
+      "reauth_account_mismatch": "인증된 계정이 기존 등록 항목과 일치하지 않습니다.",
+      "no_id_token": "OIDC 제공자가 id_token을 반환하지 않았습니다.",
+      "no_user_id": "Wardrowbe가 사용자 식별자를 반환하지 않았습니다.",
+      "missing_oidc_config": "저장된 OIDC 설정이 불완전합니다. 통합을 삭제 후 다시 추가하세요.",
+      "auth_failed": "인증에 실패했습니다.",
+      "cannot_connect": "Wardrowbe에 연결할 수 없습니다."
+    }
+  },
+  "selector": {
+    "auth_mode": {
+      "options": {
+        "oidc": "OIDC / SSO",
+        "dev": "개발 모드"
+      }
+    },
+    "common_occasions": {
+      "options": {
+        "beach": "해변",
+        "brunch": "브런치",
+        "business-casual": "비즈니스 캐주얼",
+        "casual": "캐주얼",
+        "date": "데이트",
+        "dinner": "디너",
+        "formal": "포멀",
+        "gym": "헬스장",
+        "hiking": "등산",
+        "interview": "면접",
+        "lounge": "라운지",
+        "office": "사무실",
+        "outdoor": "야외 활동",
+        "party": "파티",
+        "running": "러닝",
+        "smart-casual": "스마트 캐주얼",
+        "sport": "스포츠",
+        "sporty": "스포티",
+        "travel": "여행",
+        "wedding": "결혼식",
+        "weekend": "주말",
+        "work": "출근"
+      }
+    },
+    "common_time_of_day": {
+      "options": {
+        "morning": "오전",
+        "afternoon": "오후",
+        "evening": "저녁",
+        "night": "밤",
+        "full day": "하루 종일"
+      }
+    },
+    "common_colors": {
+      "options": {
+        "beige": "베이지",
+        "black": "검정",
+        "blue": "파랑",
+        "brown": "갈색",
+        "cream": "크림",
+        "gold": "금색",
+        "gray": "회색",
+        "green": "초록",
+        "khaki": "카키",
+        "maroon": "마룬",
+        "mixed": "혼합",
+        "multicolor": "다색",
+        "navy": "남색",
+        "olive": "올리브",
+        "orange": "주황",
+        "pink": "분홍",
+        "purple": "보라",
+        "red": "빨강",
+        "silver": "은색",
+        "tan": "탠",
+        "teal": "청록",
+        "white": "흰색",
+        "yellow": "노랑"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "total_items": { "name": "전체 아이템" },
+      "items_ready": { "name": "준비된 아이템" },
+      "items_processing": { "name": "처리 중인 아이템" },
+      "items_archived": { "name": "보관된 아이템" },
+      "total_outfits": { "name": "전체 옷차림" },
+      "outfits_this_week": { "name": "이번 주 옷차림" },
+      "outfits_this_month": { "name": "이번 달 옷차림" },
+      "acceptance_rate": { "name": "수락률" },
+      "average_rating": { "name": "평균 평점" },
+      "total_wears": { "name": "총 착용 횟수" },
+      "most_worn_item": { "name": "가장 많이 입은 아이템" },
+      "top_color": {
+        "name": "주요 색상",
+        "state": {
+          "beige": "베이지",
+          "black": "검정",
+          "blue": "파랑",
+          "brown": "갈색",
+          "cream": "크림",
+          "gold": "금색",
+          "gray": "회색",
+          "green": "초록",
+          "khaki": "카키",
+          "maroon": "마룬",
+          "mixed": "혼합",
+          "multicolor": "다색",
+          "navy": "남색",
+          "olive": "올리브",
+          "orange": "주황",
+          "pink": "분홍",
+          "purple": "보라",
+          "red": "빨강",
+          "silver": "은색",
+          "tan": "탠",
+          "teal": "청록",
+          "white": "흰색",
+          "yellow": "노랑"
+        }
+      },
+      "last_outfit_status": { "name": "최근 옷차림 상태" },
+      "notifications_last_24h": { "name": "알림 (24시간)" }
+    },
+    "binary_sensor": {
+      "api_healthy": { "name": "API 정상" },
+      "has_pending_outfit": { "name": "대기 중인 옷차림 추천" }
+    },
+    "event": {
+      "outfit": { "name": "옷차림 이벤트" },
+      "notification": { "name": "알림" },
+      "wear": { "name": "착용 기록" },
+      "wash": { "name": "세탁 기록" }
+    },
+    "button": {
+      "accept_latest_outfit": { "name": "최근 추천 수락" },
+      "skip_latest_outfit": { "name": "최근 추천 건너뛰기" },
+      "reject_latest_outfit": { "name": "최근 추천 거절" }
+    },
+    "todo": {
+      "to_wash": { "name": "세탁할 아이템" }
+    }
+  },
+  "services": {
+    "suggest_outfit": {
+      "name": "옷차림 추천",
+      "description": "새로운 옷차림을 추천받습니다."
+    },
+    "accept_outfit": {
+      "name": "옷차림 수락",
+      "description": "추천받은 옷차림을 수락 처리합니다."
+    },
+    "reject_outfit": {
+      "name": "옷차림 거절",
+      "description": "추천받은 옷차림을 거절 처리합니다."
+    },
+    "skip_outfit": {
+      "name": "옷차림 건너뛰기",
+      "description": "추천받은 옷차림을 건너뛰기 처리합니다."
+    },
+    "submit_feedback": {
+      "name": "옷차림 피드백 제출",
+      "description": "옷차림에 평점과 메모를 남깁니다."
+    },
+    "log_wear": {
+      "name": "착용 기록",
+      "description": "아이템 착용 내역을 기록합니다."
+    },
+    "log_wash": {
+      "name": "세탁 기록",
+      "description": "아이템 세탁 내역을 기록합니다."
+    },
+    "archive_item": {
+      "name": "아이템 보관",
+      "description": "아이템을 보관 처리합니다."
+    },
+    "restore_item": {
+      "name": "아이템 복원",
+      "description": "보관된 아이템을 복원합니다."
+    },
+    "test_notification": {
+      "name": "알림 테스트",
+      "description": "설정된 알림 채널로 테스트 알림을 보냅니다."
+    },
+    "get_summary": {
+      "name": "요약 가져오기",
+      "description": "최신 옷장 통계, 코디, 세탁 필요 아이템, 알림 정보를 한 번에 반환합니다."
+    }
+  }
+}

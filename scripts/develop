@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Run Home Assistant from this checkout for live testing.
+# HA binds 8123 inside the container; VS Code forwards it to the host.
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+if [ ! -d config ] || [ ! -L config/custom_components/wardrowbe ]; then
+  echo "config/ not initialized — running scripts/setup first."
+  scripts/setup
+fi
+
+exec hass --config "$PWD/config" --debug

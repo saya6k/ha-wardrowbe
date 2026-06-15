@@ -1,0 +1,44 @@
+# Whitelist .gitignore — default-deny. Ignore everything at the top level,
+# then re-include only the paths that belong in the repo. New/untracked junk
+# and the local dev `config/` are therefore never committed by accident.
+/*
+
+# Tracked directories
+!/.github/
+!/.devcontainer/
+!/.agents/
+!/custom_components/
+!/docs/
+!/scripts/
+
+# Tracked top-level files
+!/.gitattributes
+!/.gitignore
+!/CHANGELOG.md
+!/LICENSE
+!/README.md
+!/hacs.json
+!/zensical.en.toml
+!/zensical.ko.toml
+
+# Root doc + agent-dir symlink aliases
+!/AGENTS.md
+!/CLAUDE.md
+!/GEMINI.md
+!/.claude
+!/.gemini
+
+# Noise inside tracked directories
+__pycache__/
+*.py[cod]
+.DS_Store
+
+# .agents: track only shared skills/ + settings.json
+# (settings.local.json is per-developer; notes/ are local decision logs)
+/.agents/*
+!/.agents/skills/
+!/.agents/settings.json
+
+# Repo-specific tracked extras
+!/pyproject.toml
+!/tests/

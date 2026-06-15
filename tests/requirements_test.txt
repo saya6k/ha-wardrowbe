@@ -1,0 +1,8 @@
+# pytest-homeassistant-custom-component pulls in pytest, pytest-asyncio,
+# and the rest of the test toolchain at the exact versions Home Assistant
+# core uses. Don't add separate pins for pytest / pytest-asyncio here —
+# the resolver will pick a stale version that conflicts with the HA-aligned
+# pin chosen by this package, and you'll end up with the
+# `pytest>=8 vs pytest-asyncio<8` deadlock.
+pytest-homeassistant-custom-component>=0.13.300
+homeassistant>=2026.4.0
