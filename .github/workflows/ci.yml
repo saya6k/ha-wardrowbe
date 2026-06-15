@@ -1,0 +1,39 @@
+name: CI
+
+# Entry point that orchestrates the separate workflow files as one check suite
+# (so every job shows on the commit, e.g. 4/4). Each step's logic lives in its
+# own reusable workflow — this file only wires up order + gating.
+# yamllint disable-line rule:truthy
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    uses: ./.github/workflows/validate.yml
+
+  release:
+    needs: validate
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
+    permissions:
+      contents: write
+      pull-requests: write
+    secrets: inherit
+    uses: ./.github/workflows/release.yml
+
+  docs:
+    needs: release
+    # Publish docs only when a version is actually released.
+    if: ${{ needs.release.outputs.released == 'true' }}
+    permissions:
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/docs.yml

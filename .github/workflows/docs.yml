@@ -1,18 +1,14 @@
 name: Docs
 
-# Runs only after the Validate workflow succeeds on main (or manual dispatch).
+# Reusable: build + deploy the bilingual Zensical site to Pages. Called by
+# ci.yml only when a version is released.
 # yamllint disable-line rule:truthy
 on:
-  workflow_run:
-    workflows: ["Validate"]
-    types: [completed]
-    branches: [main]
-  workflow_dispatch:
+  workflow_call:
 
 jobs:
   docs:
     name: Build & deploy
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
