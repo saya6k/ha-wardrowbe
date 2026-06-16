@@ -24,4 +24,9 @@ jobs:
         with:
           config-file: .github/release-please-config.json
           manifest-file: .github/.release-please-manifest.json
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # Use a PAT/App token (not the default GITHUB_TOKEN): GitHub does not
+          # trigger workflows from GITHUB_TOKEN-authored events, so the release
+          # PR would get no CI and merging it would not cut the release.
+          # Create a fine-grained PAT secret RELEASE_PLEASE_TOKEN (Contents +
+          # Pull requests: write). Falls back to GITHUB_TOKEN if unset.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
