@@ -221,6 +221,10 @@
     "test_notification": {
       "name": "Test notification",
       "description": "Send a test notification through a configured setting."
+    },
+    "get_summary": {
+      "name": "Get summary",
+      "description": "Return the latest analytics, outfits, items needing wash, and notifications."
     }
   }
 }
