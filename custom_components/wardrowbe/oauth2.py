@@ -16,19 +16,22 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import logging
 import secrets
+from json import JSONDecodeError
 from typing import Any, cast
 
 import aiohttp
-from yarl import URL
-
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_entry_oauth2_flow
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from yarl import URL
 
 from .api import TokenProvider, WardrowbeAuthError, build_oidc_sync_payload
 from .const import DEFAULT_OIDC_SCOPES
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class WardrowbeOAuth2Implementation(
@@ -112,15 +115,42 @@ class WardrowbeOAuth2Implementation(
         if not self._use_pkce:
             return await super().async_resolve_external_data(external_data)
         state = external_data.get("state") or {}
-        flow_id = state.get("flow_id") if isinstance(state, dict) else None
+        if not isinstance(state, dict):
+            _LOGGER.error("PKCE: external_data state is not a dict: %r", state)
+            return await self._token_request(
+                {
+                    "grant_type": "authorization_code",
+                    "code": external_data["code"],
+                    "client_id": self.client_id,
+                }
+            )
+        redirect_uri = state.get("redirect_uri")
+        if not redirect_uri:
+            _LOGGER.error(
+                "PKCE: redirect_uri missing from OAuth state (keys: %s)",
+                list(state.keys()),
+            )
+            return await self._token_request(
+                {
+                    "grant_type": "authorization_code",
+                    "code": external_data["code"],
+                    "client_id": self.client_id,
+                }
+            )
+        flow_id = state.get("flow_id")
         verifier = self._pkce_verifiers.pop(flow_id, None) if flow_id else None
+        if not verifier:
+            _LOGGER.error(
+                "PKCE: code_verifier not found for flow_id=%s "
+                "(have verifiers for: %s)",
+                flow_id,
+                list(self._pkce_verifiers.keys()),
+            )
         return await self._token_request(
             {
                 "grant_type": "authorization_code",
                 "code": external_data["code"],
-                "redirect_uri": (
-                    state.get("redirect_uri") if isinstance(state, dict) else None
-                ),
+                "redirect_uri": redirect_uri,
                 "code_verifier": verifier or "",
             }
         )
@@ -132,13 +162,35 @@ class WardrowbeOAuth2Implementation(
             )
         # PKCE path: send client_id but never client_secret.
         session = async_get_clientsession(self.hass)
-        data["client_id"] = self.client_id
-        data.pop("client_secret", None)
+        # Start from a clean dict so we don't accidentally inherit keys meant
+        # only for the parent implementation (e.g. ``client_secret``).
+        request_data: dict[str, Any] = {}
+        for key, value in data.items():
+            if value is not None and value != "":
+                request_data[key] = value
+        request_data["client_id"] = self.client_id
+        _LOGGER.debug("PKCE token request to %s", self.token_url)
         async with session.post(
             self.token_url,
-            data=data,
+            data=request_data,
             timeout=aiohttp.ClientTimeout(total=30),
         ) as resp:
+            if resp.status >= 400:
+                try:
+                    error_response = await resp.json(content_type=None)
+                except (aiohttp.ClientError, JSONDecodeError):
+                    error_response = {}
+                error_code = error_response.get("error", "unknown")
+                error_description = error_response.get(
+                    "error_description", "unknown error"
+                )
+                _LOGGER.error(
+                    "Token request for %s failed (HTTP %s, error=%s): %s",
+                    self.domain,
+                    resp.status,
+                    error_code,
+                    error_description,
+                )
             resp.raise_for_status()
             return cast(dict[str, Any], await resp.json(content_type=None))
 
