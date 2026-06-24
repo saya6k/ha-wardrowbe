@@ -123,63 +123,63 @@ async def async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_SUGGEST_OUTFIT,
-        _make_suggest_handler(hass),
+        _guard(_make_suggest_handler(hass)),
         schema=SCHEMA_SUGGEST,
         supports_response=SupportsResponse.OPTIONAL,
     )
     hass.services.async_register(
         DOMAIN,
         SERVICE_ACCEPT_OUTFIT,
-        _make_outfit_action_handler(hass, "accept"),
+        _guard(_make_outfit_action_handler(hass, "accept")),
         schema=SCHEMA_OUTFIT_ACTION,
     )
     hass.services.async_register(
         DOMAIN,
         SERVICE_REJECT_OUTFIT,
-        _make_outfit_action_handler(hass, "reject"),
+        _guard(_make_outfit_action_handler(hass, "reject")),
         schema=SCHEMA_OUTFIT_ACTION,
     )
     hass.services.async_register(
         DOMAIN,
         SERVICE_SKIP_OUTFIT,
-        _make_outfit_action_handler(hass, "skip"),
+        _guard(_make_outfit_action_handler(hass, "skip")),
         schema=SCHEMA_OUTFIT_ACTION,
     )
     hass.services.async_register(
         DOMAIN,
         SERVICE_SUBMIT_FEEDBACK,
-        _make_feedback_handler(hass),
+        _guard(_make_feedback_handler(hass)),
         schema=SCHEMA_FEEDBACK,
         supports_response=SupportsResponse.OPTIONAL,
     )
     hass.services.async_register(
-        DOMAIN, SERVICE_LOG_WEAR, _make_log_wear_handler(hass), schema=SCHEMA_LOG_WEAR
+        DOMAIN, SERVICE_LOG_WEAR, _guard(_make_log_wear_handler(hass)), schema=SCHEMA_LOG_WEAR
     )
     hass.services.async_register(
-        DOMAIN, SERVICE_LOG_WASH, _make_log_wash_handler(hass), schema=SCHEMA_LOG_WASH
+        DOMAIN, SERVICE_LOG_WASH, _guard(_make_log_wash_handler(hass)), schema=SCHEMA_LOG_WASH
     )
     hass.services.async_register(
         DOMAIN,
         SERVICE_ARCHIVE_ITEM,
-        _make_archive_handler(hass),
+        _guard(_make_archive_handler(hass)),
         schema=SCHEMA_ARCHIVE,
     )
     hass.services.async_register(
         DOMAIN,
         SERVICE_RESTORE_ITEM,
-        _make_restore_handler(hass),
+        _guard(_make_restore_handler(hass)),
         schema=SCHEMA_RESTORE,
     )
     hass.services.async_register(
         DOMAIN,
         SERVICE_TEST_NOTIFICATION,
-        _make_test_notification_handler(hass),
+        _guard(_make_test_notification_handler(hass)),
         schema=SCHEMA_TEST_NOTIFICATION,
     )
     hass.services.async_register(
         DOMAIN,
         SERVICE_GET_SUMMARY,
-        _make_get_summary_handler(hass),
+        _guard(_make_get_summary_handler(hass)),
         schema=SCHEMA_GET_SUMMARY,
         supports_response=SupportsResponse.ONLY,
     )
@@ -218,6 +218,26 @@ def _resolve_runtime(
     return runtime.client, runtime.coordinator
 
 
+def _guard(handler):
+    """Wrap a service handler to prevent ServiceValidationError from reaching aiohttp.
+
+    When a config entry is removed while automations/scripts still reference it,
+    ``_resolve_runtime`` raises ``ServiceValidationError``.  Without this guard
+    that error reaches aiohttp's top-level handler and is logged at ERROR level
+    on every service call — potentially hundreds of times.  Catching it here
+    keeps it at WARNING and returns ``None`` so HA can respond gracefully.
+    """
+
+    async def _wrapped(call: ServiceCall):
+        try:
+            return await handler(call)
+        except ServiceValidationError as err:
+            _LOGGER.warning("Service call skipped: %s", err)
+            return None
+
+    return _wrapped
+
+
 def _resolve_client(hass: HomeAssistant, call: ServiceCall) -> WardrowbeClient:
     return _resolve_runtime(hass, call)[0]
 
@@ -233,7 +253,7 @@ def _resolve_latest_pending_outfit(hass: HomeAssistant, call: ServiceCall) -> st
     for outfit in runtime.coordinator.data.outfits:
         if outfit.get("status") in ACTIONABLE_OUTFIT_STATUSES and "id" in outfit:
             return str(outfit["id"])
-    raise ServiceValidationError(
+    raise HomeAssistantError(
         "No actionable outfit available; pass outfit_id explicitly."
     )
 
