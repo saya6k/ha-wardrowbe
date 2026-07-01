@@ -63,6 +63,10 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+# Track ServiceValidationError messages already logged at WARNING so repeated
+# calls with a stale config_entry_id don't flood the log.
+_warned: set[str] = set()
+
 _BASE_SCHEMA = vol.Schema({vol.Required(ATTR_CONFIG_ENTRY_ID): cv.string}, extra=vol.ALLOW_EXTRA)
 
 SCHEMA_SUGGEST = _BASE_SCHEMA.extend(
@@ -226,13 +230,22 @@ def _guard(handler):
     that error reaches aiohttp's top-level handler and is logged at ERROR level
     on every service call — potentially hundreds of times.  Catching it here
     keeps it at WARNING and returns ``None`` so HA can respond gracefully.
+
+    Only the first occurrence per error message is logged at WARNING; subsequent
+    repeats are logged at DEBUG so the user still sees the root cause without
+    the log being flooded.
     """
 
     async def _wrapped(call: ServiceCall):
         try:
             return await handler(call)
         except ServiceValidationError as err:
-            _LOGGER.warning("Service call skipped: %s", err)
+            msg = str(err)
+            if msg in _warned:
+                _LOGGER.debug("Service call skipped (repeat): %s", msg)
+            else:
+                _warned.add(msg)
+                _LOGGER.warning("Service call skipped: %s", msg)
             return None
 
     return _wrapped
