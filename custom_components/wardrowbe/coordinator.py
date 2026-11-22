@@ -11,6 +11,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
+import aiohttp
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed
@@ -25,6 +26,11 @@ from .const import (
     EVENT_GROUP_WASH,
     bus_event_name,
 )
+
+try:  # HA 2026.12+: logs the first failure once at info instead of error on every poll
+    from homeassistant.helpers.update_coordinator import UpdateFailedUnreachable
+except ImportError:  # older cores
+    UpdateFailedUnreachable = UpdateFailed
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -88,7 +94,13 @@ class WardrowbeCoordinator(DataUpdateCoordinator[WardrowbeData]):
         except WardrowbeAuthError as err:
             raise ConfigEntryAuthFailed(str(err)) from err
         except WardrowbeApiError as err:
-            raise UpdateFailed(str(err)) from err
+            # Unreachable = a connection error or timeout, not an HTTP error reply.
+            unreachable = isinstance(
+                err.__cause__, (aiohttp.ClientConnectionError, TimeoutError)
+            )
+            raise (UpdateFailedUnreachable if unreachable else UpdateFailed)(
+                str(err)
+            ) from err
 
         # Public, unauthenticated, and non-fatal — returns None on older
         # servers or transport errors, so it never fails the whole update.
