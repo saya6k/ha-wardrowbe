@@ -1,6 +1,6 @@
 # Wardrowbe — Home Assistant integration
 
-> Requires Home Assistant **2026.10.0.dev202609290227** or later.
+> Requires Home Assistant **2026.10.0** or later.
 
 A Home Assistant custom component for [Wardrowbe](https://github.com/Anyesh/wardrowbe), the self-hosted AI-powered wardrobe manager. Surfaces wardrobe analytics, outfit lifecycle, and notification history as sensors and event entities, and exposes outfit/wear/wash actions as services.
 
@@ -18,6 +18,7 @@ A Home Assistant custom component for [Wardrowbe](https://github.com/Anyesh/ward
 |---|---|
 | `sensor` | `total_items`, `items_ready`, `items_processing`, `items_archived`, `total_outfits`, `outfits_this_week`, `outfits_this_month`, `acceptance_rate`, `average_rating`, `total_wears`, `most_worn_item`, `top_color`, `last_outfit_status`, `notifications_last_24h` |
 | `binary_sensor` | `api_healthy`, `has_pending_outfit` |
+| `todo` | `to_wash` (items that need washing; completing one logs a wash) |
 | `event` | `outfit` (suggested / accepted / rejected / skipped / feedback_submitted), `notification` (sent / failed), `wear` (logged), `wash` (logged) |
 
 ### Services
@@ -43,7 +44,7 @@ Every payload includes the originating `config_entry_id`.
 
 ### HACS (recommended)
 
-1. In HACS → Integrations → Custom repositories, add `https://github.com/saya6k/ha_wardrowbe` as type **Integration**.
+1. In HACS → Integrations → Custom repositories, add `https://github.com/saya6k/ha-wardrowbe` as type **Integration**.
 2. Install **Wardrowbe** from HACS.
 3. Restart Home Assistant.
 4. **Settings → Devices & Services → Add Integration → Wardrowbe**.
