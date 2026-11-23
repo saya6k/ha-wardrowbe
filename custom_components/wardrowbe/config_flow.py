@@ -197,7 +197,7 @@ class WardrowbeConfigFlow(
             issuer = user_input[CONF_ISSUER_URL].rstrip("/")
             try:
                 metadata = await discover_oidc_endpoints(self.hass, issuer)
-            except aiohttp.ClientError as err:
+            except (aiohttp.ClientError, TimeoutError) as err:
                 _LOGGER.warning("Issuer discovery failed: %s", err)
                 errors["base"] = "issuer_discovery_failed"
             else:
@@ -405,7 +405,7 @@ class WardrowbeConfigFlow(
                 if resp.status != 200:
                     return ""
                 cfg = await resp.json()
-        except aiohttp.ClientError:
+        except (aiohttp.ClientError, TimeoutError):
             return ""
         oidc_block = cfg.get("oidc") if isinstance(cfg.get("oidc"), dict) else {}
         return (
