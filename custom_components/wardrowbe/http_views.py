@@ -28,6 +28,16 @@ _LOGGER = logging.getLogger(__name__)
 
 _ALLOWED_PATH_PREFIX = "/api/v1/images/"
 
+# The view is unauthenticated and same-origin with HA, so whatever it serves
+# runs with HA's origin if opened directly. Only pass images, never let the
+# browser sniff them into something else, and sandbox them: SVG is image/*
+# yet can carry script. Embedding via <img> is unaffected by these headers.
+_IMAGE_RESPONSE_HEADERS = {
+    "Cache-Control": "private, max-age=3600",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+}
+
 
 def normalize_image_path(path: str) -> str | None:
     """Return the normalised upstream path, or None if it leaves the images tree."""
@@ -70,14 +80,18 @@ class WardrowbeImageProxyView(HomeAssistantView):
         except WardrowbeApiError as err:
             if err.status is None:
                 _LOGGER.warning("Wardrowbe image proxy failed for %s: %s", full_path, err)
-                return web.Response(status=502)
-            return web.Response(status=err.status)
+            return web.Response(status=err.status or 502)
+        media_type = content_type.split(";", 1)[0].strip().lower()
+        if not media_type.startswith("image/"):
+            _LOGGER.warning(
+                "Wardrowbe image proxy refused non-image %r for %s",
+                content_type,
+                full_path,
+            )
+            return web.Response(status=502)
         # Passed as a header, not ``content_type=``: aiohttp rejects that
         # argument when it carries parameters such as ``; charset=``.
         return web.Response(
             body=body,
-            headers={
-                "Content-Type": content_type,
-                "Cache-Control": "private, max-age=3600",
-            },
+            headers={"Content-Type": content_type, **_IMAGE_RESPONSE_HEADERS},
         )
