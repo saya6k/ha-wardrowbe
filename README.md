@@ -94,7 +94,7 @@ Pick **Development mode** in step 1 and enter the `external_id` you log in with 
 
 ### Multiple accounts
 
-Run the **Add Integration** flow once per account. Each entry creates its own device, sensors, event entities, and shows up in the `config_entry_id` selector for service calls.
+Run the **Add Integration** flow once per account. Each entry creates its own device, sensors, event entities, and shows up in the `config_entry_id` selector for service calls. Adding another account on a server that's already configured reuses its OIDC client settings and asks the identity provider to show its login screen, so you can sign in as a different user.
 
 ### Reconfiguring
 

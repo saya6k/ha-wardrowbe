@@ -92,6 +92,9 @@ class WardrowbeConfigFlow(
         self._external_id: str | None = None
         self._reauth_entry: ConfigEntry | None = None
         self._reconfigure_entry: ConfigEntry | None = None
+        # Set when a fresh flow targets a host that already has an entry, i.e.
+        # the user is adding another account on the same Wardrowbe server.
+        self._same_host_entry: ConfigEntry | None = None
 
     @property
     def logger(self) -> logging.Logger:
@@ -99,7 +102,12 @@ class WardrowbeConfigFlow(
 
     @property
     def extra_authorize_data(self) -> dict[str, Any]:
-        return {"scope": self._scopes}
+        data: dict[str, Any] = {"scope": self._scopes}
+        if self._same_host_entry is not None:
+            # Otherwise the IdP silently reuses the browser's session and signs
+            # in as the already-configured account, aborting the flow.
+            data["prompt"] = "login"
+        return data
 
     # --- step: user (entry point) ---
 
@@ -116,6 +124,8 @@ class WardrowbeConfigFlow(
                 self._host = host
                 self._verify_ssl = user_input.get(CONF_VERIFY_SSL, True)
                 self._auth_mode = user_input[CONF_AUTH_MODE]
+                if self._reconfigure_entry is None:
+                    self._prefill_from_same_host(host)
                 if self._auth_mode == AUTH_MODE_DEV:
                     return await self.async_step_dev()
                 return await self.async_step_oidc()
@@ -211,7 +221,11 @@ class WardrowbeConfigFlow(
                 raw_secret = (user_input.get(CONF_CLIENT_SECRET) or "").strip()
                 if raw_secret:
                     self._client_secret = raw_secret
-                elif self._reauth_entry is None and self._reconfigure_entry is None:
+                elif (
+                    self._reauth_entry is None
+                    and self._reconfigure_entry is None
+                    and self._same_host_entry is None
+                ):
                     self._client_secret = None
                 use_pkce = user_input.get(CONF_USE_PKCE, self._use_pkce)
                 self._scopes = user_input.get(CONF_SCOPES) or DEFAULT_OIDC_SCOPES
@@ -390,6 +404,27 @@ class WardrowbeConfigFlow(
         return await self.async_step_user()
 
     # --- helpers ---
+
+    def _prefill_from_same_host(self, host: str) -> None:
+        """Reuse an existing entry's OIDC client when adding another account."""
+        self._same_host_entry = next(
+            (
+                entry
+                for entry in self._async_current_entries(include_ignore=False)
+                if entry.data.get(CONF_HOST) == host
+            ),
+            None,
+        )
+        if self._same_host_entry is None:
+            return
+        existing = self._same_host_entry.data
+        if self._auth_mode != AUTH_MODE_OIDC or existing.get(CONF_AUTH_MODE) != AUTH_MODE_OIDC:
+            return
+        self._issuer_url = existing.get(CONF_ISSUER_URL)
+        self._client_id = existing.get(CONF_CLIENT_ID)
+        self._client_secret = existing.get(CONF_CLIENT_SECRET)
+        self._use_pkce = existing.get(CONF_USE_PKCE, not self._client_secret)
+        self._scopes = existing.get(CONF_SCOPES, DEFAULT_OIDC_SCOPES)
 
     async def _discover_issuer(self) -> str:
         """Best-effort fetch of issuer URL from Wardrowbe's /auth/config."""

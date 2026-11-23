@@ -9,11 +9,13 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
+from yarl import URL
 
 from custom_components.wardrowbe.const import (
     API_AUTH_CONFIG,
@@ -161,3 +163,91 @@ async def test_dev_mode_invalid_host(hass: HomeAssistant) -> None:
     )
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": "invalid_host"}
+
+
+_DISCOVERY = {
+    "authorization_endpoint": "http://issuer.test/authorize",
+    "token_endpoint": "http://issuer.test/token",
+}
+
+
+async def _oidc_to_authorize_url(
+    hass: HomeAssistant, oidc_input: dict[str, object] | None
+) -> tuple[str, dict[str, object]]:
+    """Run user → oidc → external step; return the authorize URL and oidc defaults."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {
+            CONF_HOST: "http://wardrowbe.test",
+            CONF_AUTH_MODE: AUTH_MODE_OIDC,
+            CONF_VERIFY_SSL: True,
+        },
+    )
+    assert result["step_id"] == "oidc"
+    defaults = {
+        str(key): key.default()
+        for key in result["data_schema"].schema
+        if callable(getattr(key, "default", None))
+    }
+    with patch(
+        "custom_components.wardrowbe.config_flow.discover_oidc_endpoints",
+        new=AsyncMock(return_value=_DISCOVERY),
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], oidc_input or defaults
+        )
+    assert result["type"] is FlowResultType.EXTERNAL_STEP
+    return result["url"], defaults
+
+
+@pytest.mark.usefixtures("current_request_with_host")
+async def test_oidc_second_account_on_same_host(hass: HomeAssistant) -> None:
+    """Adding another account on a known host reuses its OIDC client and forces login."""
+    MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="http://wardrowbe.test::user-1",
+        data={
+            CONF_HOST: "http://wardrowbe.test",
+            CONF_VERIFY_SSL: True,
+            CONF_AUTH_MODE: AUTH_MODE_OIDC,
+            CONF_ISSUER_URL: "http://issuer.test",
+            CONF_CLIENT_ID: "my-client",
+            CONF_CLIENT_SECRET: "s3cret",
+            CONF_USE_PKCE: False,
+            CONF_SCOPES: "openid email",
+        },
+    ).add_to_hass(hass)
+
+    url, defaults = await _oidc_to_authorize_url(hass, None)
+
+    assert defaults[CONF_ISSUER_URL] == "http://issuer.test"
+    assert defaults[CONF_CLIENT_ID] == "my-client"
+    assert defaults[CONF_USE_PKCE] is False
+    assert defaults[CONF_SCOPES] == "openid email"
+    assert defaults[CONF_CLIENT_SECRET] == ""  # never echoed back into the form
+    query = URL(url).query
+    assert query["prompt"] == "login"
+    assert query["client_id"] == "my-client"
+    # Blank secret field kept the stored secret, so PKCE-off was accepted.
+    assert "code_challenge" not in query
+
+
+@pytest.mark.usefixtures("current_request_with_host")
+async def test_oidc_first_account_does_not_force_login(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    aioclient_mock.get(f"http://wardrowbe.test{API_AUTH_CONFIG}", status=404)
+    url, _ = await _oidc_to_authorize_url(
+        hass,
+        {
+            CONF_ISSUER_URL: "http://issuer.test",
+            CONF_CLIENT_ID: "my-client",
+            CONF_CLIENT_SECRET: "",
+            CONF_USE_PKCE: True,
+            CONF_SCOPES: "openid",
+        },
+    )
+    assert "prompt" not in URL(url).query
