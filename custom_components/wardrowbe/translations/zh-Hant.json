@@ -1,0 +1,408 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Wardrowbe — 連線",
+        "description": "輸入 Wardrowbe 的 URL，並選擇驗證方式。",
+        "data": {
+          "host": "Wardrowbe URL",
+          "auth_mode": "驗證",
+          "verify_ssl": "驗證 SSL 憑證"
+        }
+      },
+      "oidc": {
+        "title": "Wardrowbe — OIDC",
+        "description": "Wardrowbe 只接受透過其自身 OIDC 用戶端的登入，因此若伺服器公開了 issuer URL 和用戶端 ID，會自動填入。若該用戶端沒有密鑰（例如 Wardrowbe 的行動版用戶端），請將密鑰留空並保持啟用 PKCE；否則請輸入用戶端密鑰。授權/權杖 URL 會自動探索。\n\n請在身分提供者中為該用戶端新增一次此重新導向 URI：`{redirect_uri}`",
+        "data": {
+          "issuer_url": "OIDC issuer URL",
+          "client_id": "用戶端 ID",
+          "client_secret": "用戶端密鑰（公開用戶端請留空）",
+          "use_pkce": "使用 PKCE",
+          "scopes": "範圍"
+        }
+      },
+      "dev": {
+        "title": "Wardrowbe — 開發模式",
+        "description": "僅適用於以開發驗證模式執行的 Wardrowbe。",
+        "data": {
+          "external_id": "External ID"
+        }
+      },
+      "reauth_confirm": {
+        "title": "重新驗證 Wardrowbe",
+        "description": "已儲存的憑證已失效。繼續以重新登入。"
+      }
+    },
+    "error": {
+      "invalid_host": "主機必須是包含協定（http:// 或 https://）的完整 URL。",
+      "cannot_connect": "無法連線至 Wardrowbe。",
+      "auth_failed": "驗證失敗。",
+      "issuer_discovery_failed": "無法從 issuer 載入 .well-known/openid-configuration。",
+      "pkce_required_without_secret": "公開用戶端（無用戶端密鑰）必須使用 PKCE。"
+    },
+    "abort": {
+      "already_configured": "此 Wardrowbe 帳戶已設定。",
+      "reauth_account_mismatch": "已驗證的帳戶與現有項目不符。",
+      "reconfigure_account_mismatch": "已驗證的帳戶與現有項目不符。",
+      "no_id_token": "OIDC 提供者未傳回 id_token。",
+      "no_user_id": "Wardrowbe 未傳回使用者識別碼。",
+      "missing_oidc_config": "已儲存的 OIDC 設定不完整，請刪除並重新新增該項目。",
+      "auth_failed": "驗證失敗。",
+      "cannot_connect": "無法連線至 Wardrowbe。"
+    }
+  },
+  "selector": {
+    "auth_mode": {
+      "options": {
+        "oidc": "OIDC / SSO",
+        "dev": "開發模式"
+      }
+    },
+    "common_occasions": {
+      "options": {
+        "beach": "海灘",
+        "brunch": "早午餐",
+        "business-casual": "商務休閒",
+        "casual": "休閒",
+        "date": "約會",
+        "dinner": "晚餐",
+        "formal": "正式",
+        "gym": "健身房",
+        "hiking": "健行",
+        "interview": "面試",
+        "lounge": "居家",
+        "office": "辦公室",
+        "outdoor": "戶外",
+        "party": "派對",
+        "running": "跑步",
+        "smart-casual": "精緻休閒",
+        "sport": "體育",
+        "sporty": "運動",
+        "travel": "旅行",
+        "wedding": "婚禮",
+        "weekend": "週末",
+        "work": "工作"
+      }
+    },
+    "common_time_of_day": {
+      "options": {
+        "morning": "早上",
+        "afternoon": "下午",
+        "evening": "傍晚",
+        "night": "夜晚",
+        "full_day": "全天"
+      }
+    },
+    "common_colors": {
+      "options": {
+        "beige": "米色",
+        "black": "黑色",
+        "blue": "藍色",
+        "brown": "棕色",
+        "cream": "奶油色",
+        "gold": "金色",
+        "gray": "灰色",
+        "green": "綠色",
+        "khaki": "卡其色",
+        "maroon": "栗色",
+        "mixed": "混合",
+        "multicolor": "多色",
+        "navy": "海軍藍",
+        "olive": "橄欖綠",
+        "orange": "橘色",
+        "pink": "粉紅",
+        "purple": "紫色",
+        "red": "紅色",
+        "silver": "銀色",
+        "tan": "褐色",
+        "teal": "水鴨色",
+        "white": "白色",
+        "yellow": "黃色"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "total_items": { "name": "總單品數" },
+      "items_ready": { "name": "就緒單品" },
+      "items_processing": { "name": "處理中的單品" },
+      "items_archived": { "name": "已封存單品" },
+      "total_outfits": { "name": "穿搭總數" },
+      "outfits_this_week": { "name": "本週穿搭" },
+      "outfits_this_month": { "name": "本月穿搭" },
+      "acceptance_rate": { "name": "接受率" },
+      "average_rating": { "name": "平均評分" },
+      "total_wears": { "name": "穿著總次數" },
+      "most_worn_item": { "name": "最常穿著的單品" },
+      "top_color": {
+        "name": "最多的顏色",
+        "state": {
+          "beige": "米色",
+          "black": "黑色",
+          "blue": "藍色",
+          "brown": "棕色",
+          "cream": "奶油色",
+          "gold": "金色",
+          "gray": "灰色",
+          "green": "綠色",
+          "khaki": "卡其色",
+          "maroon": "栗色",
+          "mixed": "混合",
+          "multicolor": "多色",
+          "navy": "海軍藍",
+          "olive": "橄欖綠",
+          "orange": "橘色",
+          "pink": "粉紅",
+          "purple": "紫色",
+          "red": "紅色",
+          "silver": "銀色",
+          "tan": "褐色",
+          "teal": "水鴨色",
+          "white": "白色",
+          "yellow": "黃色"
+        }
+      },
+      "last_outfit_status": { "name": "最新穿搭狀態" },
+      "notifications_last_24h": { "name": "通知（24 小時）" }
+    },
+    "binary_sensor": {
+      "api_healthy": { "name": "API 正常" },
+      "has_pending_outfit": { "name": "待處理的穿搭建議" }
+    },
+    "event": {
+      "outfit": { "name": "穿搭狀態變化" },
+      "notification": { "name": "通知" },
+      "wear": { "name": "已記錄穿著" },
+      "wash": { "name": "已記錄洗滌" }
+    },
+    "todo": {
+      "to_wash": { "name": "需要洗滌的單品" }
+    }
+  },
+  "services": {
+    "suggest_outfit": {
+      "name": "建議穿搭",
+      "description": "產生新的穿搭建議。",
+      "fields": {
+        "config_entry_id": {
+          "name": "帳戶",
+          "description": "要操作的 Wardrowbe 帳戶（設定項目）。"
+        },
+        "occasion": {
+          "name": "場合",
+          "description": "穿搭的用途，例如辦公、休閒或約會。"
+        },
+        "time_of_day": {
+          "name": "時段",
+          "description": "穿著時段：morning、afternoon、evening、night 或 full_day。"
+        },
+        "target_date": {
+          "name": "日期",
+          "description": "要穿搭的日期。預設為今天。"
+        },
+        "notes": {
+          "name": "備註",
+          "description": "自由文字提示，例如「下雨了」或「要見客戶」。"
+        }
+      }
+    },
+    "create_outfit_suggestion": {
+      "name": "建立穿搭建議",
+      "description": "用你選擇的單品（ID）組成穿搭，並儲存為待處理的建議。即使 Wardrowbe 內建 AI 已關閉也可使用。",
+      "fields": {
+        "config_entry_id": {
+          "name": "帳戶",
+          "description": "要操作的 Wardrowbe 帳戶（設定項目）。"
+        },
+        "item_ids": {
+          "name": "單品 ID",
+          "description": "組成穿搭的 1 到 20 個 Wardrowbe 單品 ID，例如上身、下身和鞋。"
+        },
+        "occasion": {
+          "name": "場合",
+          "description": "穿搭的用途，例如辦公、休閒或約會。"
+        },
+        "name": {
+          "name": "名稱",
+          "description": "穿搭的名稱（選填）。"
+        },
+        "scheduled_for": {
+          "name": "日期",
+          "description": "穿搭對應的日期。預設為今天。"
+        },
+        "reasoning": {
+          "name": "理由",
+          "description": "這些單品搭配在一起的理由，會隨建議一起顯示。"
+        },
+        "notes": {
+          "name": "備註",
+          "description": "隨穿搭一起儲存的備註。"
+        }
+      }
+    },
+    "accept_outfit": {
+      "name": "接受穿搭",
+      "description": "將穿搭建議標記為已接受。",
+      "fields": {
+        "config_entry_id": {
+          "name": "帳戶",
+          "description": "要操作的 Wardrowbe 帳戶（設定項目）。"
+        },
+        "outfit_id": {
+          "name": "穿搭 ID",
+          "description": "要操作的穿搭。留空則使用最新的待處理穿搭。"
+        }
+      }
+    },
+    "reject_outfit": {
+      "name": "拒絕穿搭",
+      "description": "將穿搭建議標記為已拒絕。",
+      "fields": {
+        "config_entry_id": {
+          "name": "帳戶",
+          "description": "要操作的 Wardrowbe 帳戶（設定項目）。"
+        },
+        "outfit_id": {
+          "name": "穿搭 ID",
+          "description": "要操作的穿搭。留空則使用最新的待處理穿搭。"
+        }
+      }
+    },
+    "skip_outfit": {
+      "name": "略過穿搭",
+      "description": "將穿搭建議標記為已略過。",
+      "fields": {
+        "config_entry_id": {
+          "name": "帳戶",
+          "description": "要操作的 Wardrowbe 帳戶（設定項目）。"
+        },
+        "outfit_id": {
+          "name": "穿搭 ID",
+          "description": "要操作的穿搭。留空則使用最新的待處理穿搭。"
+        }
+      }
+    },
+    "submit_feedback": {
+      "name": "為穿搭評分",
+      "description": "為穿搭提交評分和選填備註。",
+      "fields": {
+        "config_entry_id": {
+          "name": "帳戶",
+          "description": "要操作的 Wardrowbe 帳戶（設定項目）。"
+        },
+        "outfit_id": {
+          "name": "穿搭 ID",
+          "description": "要評價的穿搭。"
+        },
+        "rating": {
+          "name": "評分",
+          "description": "評分，1（最差）到 5（最好）。"
+        },
+        "wore": {
+          "name": "已穿過",
+          "description": "是否真的穿了這套穿搭。"
+        },
+        "notes": {
+          "name": "備註",
+          "description": "自由文字回饋。"
+        }
+      }
+    },
+    "log_wear": {
+      "name": "記錄穿著",
+      "description": "記錄單品的一次穿著。",
+      "fields": {
+        "config_entry_id": {
+          "name": "帳戶",
+          "description": "要操作的 Wardrowbe 帳戶（設定項目）。"
+        },
+        "item_id": {
+          "name": "單品 ID",
+          "description": "該單品的 Wardrowbe ID。"
+        },
+        "date": {
+          "name": "日期",
+          "description": "穿著的日期。預設為今天。"
+        }
+      }
+    },
+    "log_wash": {
+      "name": "標記為已洗",
+      "description": "記錄單品的一次洗滌。",
+      "fields": {
+        "config_entry_id": {
+          "name": "帳戶",
+          "description": "要操作的 Wardrowbe 帳戶（設定項目）。"
+        },
+        "item_id": {
+          "name": "單品 ID",
+          "description": "該單品的 Wardrowbe ID。"
+        }
+      }
+    },
+    "archive_item": {
+      "name": "封存單品",
+      "description": "將單品封存。",
+      "fields": {
+        "config_entry_id": {
+          "name": "帳戶",
+          "description": "要操作的 Wardrowbe 帳戶（設定項目）。"
+        },
+        "item_id": {
+          "name": "單品 ID",
+          "description": "該單品的 Wardrowbe ID。"
+        },
+        "reason": {
+          "name": "原因",
+          "description": "封存原因，例如已捐贈或已穿舊。"
+        }
+      }
+    },
+    "restore_item": {
+      "name": "還原單品",
+      "description": "還原先前封存的單品。",
+      "fields": {
+        "config_entry_id": {
+          "name": "帳戶",
+          "description": "要操作的 Wardrowbe 帳戶（設定項目）。"
+        },
+        "item_id": {
+          "name": "單品 ID",
+          "description": "該單品的 Wardrowbe ID。"
+        }
+      }
+    },
+    "test_notification": {
+      "name": "測試通知",
+      "description": "透過已設定的通知設定傳送測試通知。",
+      "fields": {
+        "config_entry_id": {
+          "name": "帳戶",
+          "description": "要操作的 Wardrowbe 帳戶（設定項目）。"
+        },
+        "setting_id": {
+          "name": "通知設定 ID",
+          "description": "用於傳送測試的 Wardrowbe 通知設定。"
+        }
+      }
+    },
+    "get_summary": {
+      "name": "取得摘要",
+      "description": "傳回最新的數據分析、穿搭、需要洗滌的單品和通知。",
+      "fields": {
+        "config_entry_id": {
+          "name": "帳戶",
+          "description": "要操作的 Wardrowbe 帳戶（設定項目）。"
+        },
+        "exclude_statuses": {
+          "name": "排除的狀態",
+          "description": "排除這些狀態的穿搭（pending、sent、accepted、rejected 或 skipped）。"
+        },
+        "include_statuses": {
+          "name": "包含的狀態",
+          "description": "只傳回這些狀態的穿搭（pending、sent、accepted、rejected 或 skipped）。"
+        }
+      }
+    }
+  }
+}

@@ -65,14 +65,14 @@
         "business-casual": "비즈니스 캐주얼",
         "casual": "캐주얼",
         "date": "데이트",
-        "dinner": "디너",
+        "dinner": "저녁 식사",
         "formal": "포멀",
         "gym": "헬스장",
-        "hiking": "등산",
+        "hiking": "하이킹",
         "interview": "면접",
         "lounge": "라운지",
-        "office": "사무실",
-        "outdoor": "야외 활동",
+        "office": "오피스",
+        "outdoor": "아웃도어",
         "party": "파티",
         "running": "러닝",
         "smart-casual": "스마트 캐주얼",
@@ -81,7 +81,7 @@
         "travel": "여행",
         "wedding": "결혼식",
         "weekend": "주말",
-        "work": "출근"
+        "work": "업무"
       }
     },
     "common_time_of_day": {
@@ -96,28 +96,28 @@
     "common_colors": {
       "options": {
         "beige": "베이지",
-        "black": "검정",
-        "blue": "파랑",
-        "brown": "갈색",
+        "black": "블랙",
+        "blue": "블루",
+        "brown": "브라운",
         "cream": "크림",
-        "gold": "금색",
-        "gray": "회색",
-        "green": "초록",
+        "gold": "골드",
+        "gray": "그레이",
+        "green": "그린",
         "khaki": "카키",
         "maroon": "마룬",
         "mixed": "혼합",
         "multicolor": "다색",
-        "navy": "남색",
+        "navy": "네이비",
         "olive": "올리브",
-        "orange": "주황",
-        "pink": "분홍",
-        "purple": "보라",
-        "red": "빨강",
-        "silver": "은색",
-        "tan": "탠",
+        "orange": "오렌지",
+        "pink": "핑크",
+        "purple": "퍼플",
+        "red": "레드",
+        "silver": "실버",
+        "tan": "탄",
         "teal": "청록",
-        "white": "흰색",
-        "yellow": "노랑"
+        "white": "화이트",
+        "yellow": "옐로"
       }
     }
   },
@@ -127,9 +127,9 @@
       "items_ready": { "name": "준비된 아이템" },
       "items_processing": { "name": "처리 중인 아이템" },
       "items_archived": { "name": "보관된 아이템" },
-      "total_outfits": { "name": "전체 옷차림" },
-      "outfits_this_week": { "name": "이번 주 옷차림" },
-      "outfits_this_month": { "name": "이번 달 옷차림" },
+      "total_outfits": { "name": "전체 코디" },
+      "outfits_this_week": { "name": "이번 주 코디" },
+      "outfits_this_month": { "name": "이번 달 코디" },
       "acceptance_rate": { "name": "수락률" },
       "average_rating": { "name": "평균 평점" },
       "total_wears": { "name": "총 착용 횟수" },
@@ -138,39 +138,39 @@
         "name": "주요 색상",
         "state": {
           "beige": "베이지",
-          "black": "검정",
-          "blue": "파랑",
-          "brown": "갈색",
+          "black": "블랙",
+          "blue": "블루",
+          "brown": "브라운",
           "cream": "크림",
-          "gold": "금색",
-          "gray": "회색",
-          "green": "초록",
+          "gold": "골드",
+          "gray": "그레이",
+          "green": "그린",
           "khaki": "카키",
           "maroon": "마룬",
           "mixed": "혼합",
           "multicolor": "다색",
-          "navy": "남색",
+          "navy": "네이비",
           "olive": "올리브",
-          "orange": "주황",
-          "pink": "분홍",
-          "purple": "보라",
-          "red": "빨강",
-          "silver": "은색",
-          "tan": "탠",
+          "orange": "오렌지",
+          "pink": "핑크",
+          "purple": "퍼플",
+          "red": "레드",
+          "silver": "실버",
+          "tan": "탄",
           "teal": "청록",
-          "white": "흰색",
-          "yellow": "노랑"
+          "white": "화이트",
+          "yellow": "옐로"
         }
       },
-      "last_outfit_status": { "name": "최근 옷차림 상태" },
+      "last_outfit_status": { "name": "최근 코디 상태" },
       "notifications_last_24h": { "name": "알림 (24시간)" }
     },
     "binary_sensor": {
       "api_healthy": { "name": "API 정상" },
-      "has_pending_outfit": { "name": "대기 중인 옷차림 추천" }
+      "has_pending_outfit": { "name": "대기 중인 코디 추천" }
     },
     "event": {
-      "outfit": { "name": "옷차림 이벤트" },
+      "outfit": { "name": "코디 진행 상황" },
       "notification": { "name": "알림" },
       "wear": { "name": "착용 기록" },
       "wash": { "name": "세탁 기록" }
@@ -181,8 +181,8 @@
   },
   "services": {
     "suggest_outfit": {
-      "name": "옷차림 추천",
-      "description": "새로운 옷차림을 추천받습니다.",
+      "name": "코디 추천",
+      "description": "새 코디를 추천받습니다.",
       "fields": {
         "config_entry_id": {
           "name": "계정",
@@ -190,7 +190,7 @@
         },
         "occasion": {
           "name": "상황",
-          "description": "옷차림의 용도입니다. 예: office, casual, date."
+          "description": "코디의 용도입니다. 예: 오피스, 캐주얼, 데이트."
         },
         "time_of_day": {
           "name": "시간대",
@@ -207,8 +207,8 @@
       }
     },
     "create_outfit_suggestion": {
-      "name": "옷차림 추천 만들기",
-      "description": "직접 고른 아이템(ID)으로 옷차림을 만들어 대기 중인 추천으로 저장합니다. Wardrowbe 내장 AI가 꺼져 있어도 동작합니다.",
+      "name": "코디 추천 만들기",
+      "description": "직접 고른 아이템(ID)으로 코디를 만들어 대기 중인 추천으로 저장합니다. Wardrowbe 내장 AI가 꺼져 있어도 동작합니다.",
       "fields": {
         "config_entry_id": {
           "name": "계정",
@@ -216,19 +216,19 @@
         },
         "item_ids": {
           "name": "아이템 ID",
-          "description": "옷차림을 이루는 Wardrowbe 아이템 ID 1~20개입니다. 예: 상의, 하의, 신발."
+          "description": "코디를 이루는 Wardrowbe 아이템 ID 1~20개입니다. 예: 상의, 하의, 신발."
         },
         "occasion": {
           "name": "상황",
-          "description": "옷차림의 용도입니다. 예: office, casual, date."
+          "description": "코디의 용도입니다. 예: 오피스, 캐주얼, 데이트."
         },
         "name": {
           "name": "이름",
-          "description": "옷차림의 이름입니다(선택)."
+          "description": "코디의 이름입니다(선택)."
         },
         "scheduled_for": {
           "name": "날짜",
-          "description": "옷차림을 입을 날입니다. 기본값은 오늘입니다."
+          "description": "코디를 입을 날입니다. 기본값은 오늘입니다."
         },
         "reasoning": {
           "name": "이유",
@@ -236,71 +236,71 @@
         },
         "notes": {
           "name": "메모",
-          "description": "옷차림과 함께 저장할 메모입니다."
+          "description": "코디와 함께 저장할 메모입니다."
         }
       }
     },
     "accept_outfit": {
-      "name": "옷차림 수락",
-      "description": "추천받은 옷차림을 수락 처리합니다.",
+      "name": "코디 수락",
+      "description": "추천받은 코디를 수락합니다.",
       "fields": {
         "config_entry_id": {
           "name": "계정",
           "description": "작업할 Wardrowbe 계정(통합 항목)입니다."
         },
         "outfit_id": {
-          "name": "옷차림 ID",
-          "description": "대상 옷차림입니다. 비워 두면 가장 최근의 대기 중인 옷차림에 적용합니다."
+          "name": "코디 ID",
+          "description": "대상 코디입니다. 비워 두면 가장 최근의 대기 중인 코디에 적용합니다."
         }
       }
     },
     "reject_outfit": {
-      "name": "옷차림 거절",
-      "description": "추천받은 옷차림을 거절 처리합니다.",
+      "name": "코디 거절",
+      "description": "추천받은 코디를 거절합니다.",
       "fields": {
         "config_entry_id": {
           "name": "계정",
           "description": "작업할 Wardrowbe 계정(통합 항목)입니다."
         },
         "outfit_id": {
-          "name": "옷차림 ID",
-          "description": "대상 옷차림입니다. 비워 두면 가장 최근의 대기 중인 옷차림에 적용합니다."
+          "name": "코디 ID",
+          "description": "대상 코디입니다. 비워 두면 가장 최근의 대기 중인 코디에 적용합니다."
         }
       }
     },
     "skip_outfit": {
-      "name": "옷차림 건너뛰기",
-      "description": "추천받은 옷차림을 건너뛰기 처리합니다.",
+      "name": "코디 건너뛰기",
+      "description": "추천받은 코디를 건너뜁니다.",
       "fields": {
         "config_entry_id": {
           "name": "계정",
           "description": "작업할 Wardrowbe 계정(통합 항목)입니다."
         },
         "outfit_id": {
-          "name": "옷차림 ID",
-          "description": "대상 옷차림입니다. 비워 두면 가장 최근의 대기 중인 옷차림에 적용합니다."
+          "name": "코디 ID",
+          "description": "대상 코디입니다. 비워 두면 가장 최근의 대기 중인 코디에 적용합니다."
         }
       }
     },
     "submit_feedback": {
-      "name": "옷차림 피드백 제출",
-      "description": "옷차림에 평점과 메모를 남깁니다.",
+      "name": "코디 평가하기",
+      "description": "코디에 평점과 메모(선택)를 남깁니다.",
       "fields": {
         "config_entry_id": {
           "name": "계정",
           "description": "작업할 Wardrowbe 계정(통합 항목)입니다."
         },
         "outfit_id": {
-          "name": "옷차림 ID",
-          "description": "피드백을 남길 옷차림입니다."
+          "name": "코디 ID",
+          "description": "평가할 코디입니다."
         },
         "rating": {
           "name": "평점",
           "description": "1(최저)부터 5(최고)까지의 평점입니다."
         },
         "wore": {
-          "name": "입었음",
-          "description": "실제로 이 옷차림을 입었는지 여부입니다."
+          "name": "착용함",
+          "description": "실제로 이 코디를 입었는지 여부입니다."
         },
         "notes": {
           "name": "메모",
@@ -327,7 +327,7 @@
       }
     },
     "log_wash": {
-      "name": "세탁 기록",
+      "name": "세탁 완료 표시",
       "description": "아이템 세탁 내역을 기록합니다.",
       "fields": {
         "config_entry_id": {
@@ -396,11 +396,11 @@
         },
         "exclude_statuses": {
           "name": "제외할 상태",
-          "description": "이 상태의 옷차림을 뺍니다 (pending, sent, accepted, rejected or skipped)."
+          "description": "이 상태의 코디를 뺍니다 (pending, sent, accepted, rejected, skipped)."
         },
         "include_statuses": {
           "name": "포함할 상태",
-          "description": "이 상태의 옷차림만 돌려줍니다 (pending, sent, accepted, rejected or skipped)."
+          "description": "이 상태의 코디만 가져옵니다 (pending, sent, accepted, rejected, skipped)."
         }
       }
     }
