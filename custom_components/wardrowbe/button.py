@@ -11,6 +11,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import WardrowbeConfigEntry
 from .api import WardrowbeApiError
+from .const import ACTIONABLE_OUTFIT_STATUSES
 from .coordinator import WardrowbeCoordinator
 from .entity import WardrowbeEntity
 
@@ -92,6 +93,6 @@ def _latest_pending_outfit_id(coordinator: WardrowbeCoordinator) -> str | None:
     if data is None:
         return None
     for outfit in data.outfits:
-        if outfit.get("status") == "pending" and outfit.get("id") is not None:
+        if outfit.get("status") in ACTIONABLE_OUTFIT_STATUSES and outfit.get("id") is not None:
             return str(outfit["id"])
     return None
