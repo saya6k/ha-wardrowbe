@@ -13,7 +13,7 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.const import PERCENTAGE
+from homeassistant.const import MATCH_ALL, PERCENTAGE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -244,6 +244,10 @@ async def async_setup_entry(
 
 class WardrowbeSensor(WardrowbeEntity, SensorEntity):
     """Coordinator-backed sensor."""
+
+    # Attributes carry whole outfit/item dicts with presigned image URLs that
+    # can change every poll; keep them out of the recorder.
+    _unrecorded_attributes = frozenset({MATCH_ALL})
 
     entity_description: WardrowbeSensorDescription
 

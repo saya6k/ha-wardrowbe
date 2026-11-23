@@ -7,9 +7,10 @@ and as a list of pending entity events that ``event.py`` consumes.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 import aiohttp
 from homeassistant.config_entries import ConfigEntry
@@ -33,6 +34,10 @@ except ImportError:  # older cores
     UpdateFailedUnreachable = UpdateFailed
 
 _LOGGER = logging.getLogger(__name__)
+
+# Page size for the needs-wash poll. A full page means the list may be
+# truncated, so membership changes can't be trusted that cycle.
+_WASH_PAGE_SIZE = 100
 
 # How many refreshes a local-action suppression marker survives. Two covers
 # the refresh requested right after the action plus one already in flight.
@@ -91,15 +96,26 @@ class WardrowbeCoordinator(DataUpdateCoordinator[WardrowbeData]):
         self._primed = False
 
     async def _async_update_data(self) -> WardrowbeData:
-        try:
-            healthy = await self.client.async_health()
-            analytics = await self.client.async_analytics()
-            outfits = await self.client.async_recent_outfits(limit=20)
-            notifications = await self.client.async_recent_notifications(limit=50)
-            items_to_wash = await self.client.async_items_needing_wash(limit=100)
-        except WardrowbeAuthError as err:
-            raise ConfigEntryAuthFailed(str(err)) from err
-        except WardrowbeApiError as err:
+        # health and capabilities never raise (they return False/None).
+        results = await asyncio.gather(
+            self.client.async_analytics(),
+            self.client.async_recent_outfits(limit=20),
+            self.client.async_recent_notifications(limit=50),
+            self.client.async_items_needing_wash(limit=_WASH_PAGE_SIZE),
+            self.client.async_health(),
+            self.client.async_capabilities(),
+            return_exceptions=True,
+        )
+        errors = [r for r in results if isinstance(r, BaseException)]
+        if errors:
+            # Auth wins: any 401 means reauth regardless of other failures.
+            err = next(
+                (e for e in errors if isinstance(e, WardrowbeAuthError)), errors[0]
+            )
+            if isinstance(err, WardrowbeAuthError):
+                raise ConfigEntryAuthFailed(str(err)) from err
+            if not isinstance(err, WardrowbeApiError):
+                raise err
             # Unreachable = a connection error or timeout, not an HTTP error reply.
             unreachable = isinstance(
                 err.__cause__, (aiohttp.ClientConnectionError, TimeoutError)
@@ -107,12 +123,16 @@ class WardrowbeCoordinator(DataUpdateCoordinator[WardrowbeData]):
             raise (UpdateFailedUnreachable if unreachable else UpdateFailed)(
                 str(err)
             ) from err
+        analytics, outfits, notifications, items_to_wash, healthy, capabilities = (
+            cast(Any, results)
+        )
 
-        # Public, unauthenticated, and non-fatal — returns None on older
-        # servers or transport errors, so it never fails the whole update.
-        capabilities = await self.client.async_capabilities()
-
-        events = self._diff(outfits, notifications, items_to_wash)
+        events = self._diff(
+            outfits,
+            notifications,
+            items_to_wash,
+            wash_truncated=len(items_to_wash) >= _WASH_PAGE_SIZE,
+        )
         for ev in events:
             self.hass.bus.async_fire(
                 bus_event_name(ev.group, ev.event_type),
@@ -159,11 +179,22 @@ class WardrowbeCoordinator(DataUpdateCoordinator[WardrowbeData]):
             self.data.pending_events = [PendingEvent(group, event_type, dict(payload))]
             self.async_update_listeners()
 
+    @callback
+    def suppress_wash_inference(self, item_id: str) -> None:
+        """Don't infer a wash when ``item_id`` leaves the needs-wash list.
+
+        For HA-side actions that remove an item from the list without washing
+        it (archiving). Archiving outside HA can't be told apart from a wash.
+        """
+        self._recent_local_wash_ids[str(item_id)] = _LOCAL_MARKER_REFRESHES
+
     def _diff(
         self,
         outfits: list[dict[str, Any]],
         notifications: list[dict[str, Any]],
         items_to_wash: list[dict[str, Any]],
+        *,
+        wash_truncated: bool = False,
     ) -> list[PendingEvent]:
         events: list[PendingEvent] = []
 
@@ -216,7 +247,7 @@ class WardrowbeCoordinator(DataUpdateCoordinator[WardrowbeData]):
                 "name": item.get("name"),
                 "type": item.get("type"),
             }
-        if self._primed:
+        if self._primed and not wash_truncated:
             for old_id in self._known_wash_item_ids - wash_ids_now:
                 if self._recent_local_wash_ids.pop(old_id, None) is not None:
                     continue

@@ -39,6 +39,13 @@ from .const import DEFAULT_OIDC_SCOPES
 _LOGGER = logging.getLogger(__name__)
 
 
+class PKCEVerifierMissingError(aiohttp.ClientError):
+    """No stored code_verifier for the flow being resolved.
+
+    A ``ClientError`` so HA's OAuth flow handler aborts with ``oauth_failed``.
+    """
+
+
 class WardrowbeOAuth2Implementation(
     config_entry_oauth2_flow.LocalOAuth2Implementation
 ):
@@ -120,44 +127,22 @@ class WardrowbeOAuth2Implementation(
     async def async_resolve_external_data(self, external_data: Any) -> dict[str, Any]:
         if not self._use_pkce:
             return await super().async_resolve_external_data(external_data)
-        state = external_data.get("state") or {}
-        if not isinstance(state, dict):
-            _LOGGER.error("PKCE: external_data state is not a dict: %r", state)
-            return await self._token_request(
-                {
-                    "grant_type": "authorization_code",
-                    "code": external_data["code"],
-                    "client_id": self.client_id,
-                }
-            )
-        redirect_uri = state.get("redirect_uri")
-        if not redirect_uri:
-            _LOGGER.error(
-                "PKCE: redirect_uri missing from OAuth state (keys: %s)",
-                list(state.keys()),
-            )
-            return await self._token_request(
-                {
-                    "grant_type": "authorization_code",
-                    "code": external_data["code"],
-                    "client_id": self.client_id,
-                }
-            )
-        flow_id = state.get("flow_id")
-        verifier = self._pkce_verifiers.pop(flow_id, None) if flow_id else None
+        # HA's callback view always supplies the decoded state with both keys
+        # (the parent implementation indexes them the same way).
+        state = external_data["state"]
+        flow_id = state["flow_id"]
+        verifier = self._pkce_verifiers.pop(flow_id, None)
         if not verifier:
-            _LOGGER.error(
-                "PKCE: code_verifier not found for flow_id=%s "
-                "(have verifiers for: %s)",
-                flow_id,
-                list(self._pkce_verifiers.keys()),
+            # Only after a reload mid-flow: verifiers live in memory only.
+            raise PKCEVerifierMissingError(
+                f"No PKCE code_verifier for flow {flow_id}; restart the flow."
             )
         return await self._token_request(
             {
                 "grant_type": "authorization_code",
                 "code": external_data["code"],
-                "redirect_uri": redirect_uri,
-                "code_verifier": verifier or "",
+                "redirect_uri": state["redirect_uri"],
+                "code_verifier": verifier,
             }
         )
 

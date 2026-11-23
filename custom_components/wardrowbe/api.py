@@ -18,6 +18,7 @@ import json
 import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from urllib.parse import quote
 
 import aiohttp
 from aiohttp import ClientSession
@@ -43,6 +44,8 @@ _LOGGER = logging.getLogger(__name__)
 
 _JWT_REFRESH_LEEWAY = timedelta(hours=1)
 _DEFAULT_JWT_TTL_SECONDS = 6 * 24 * 3600  # 6 days; Wardrowbe defaults to 7
+# Images are proxied unauthenticated through HA, so cap what one request can pull.
+MAX_IMAGE_BYTES = 20 * 1024 * 1024
 
 
 class WardrowbeApiError(Exception):
@@ -169,7 +172,10 @@ class WardrowbeClient:
         self._verify_ssl = verify_ssl
         self._entry_id = entry_id
         self._jwt: str | None = None
-        self._jwt_expires_at: datetime | None = None
+        # Bumped on every successful sync; lets a 401'd request tell whether
+        # someone else already re-synced since it fetched its JWT.
+        self._jwt_generation = 0
+        self._jwt_refresh_at: datetime | None = None
         self._sync_lock = asyncio.Lock()
 
     @property
@@ -304,50 +310,88 @@ class WardrowbeClient:
     async def async_outfit_action(self, outfit_id: str, action: str) -> dict[str, Any]:
         if action not in {"accept", "reject", "skip"}:
             raise ValueError(f"Unsupported outfit action: {action}")
-        return await self._request("POST", f"{API_OUTFITS}/{outfit_id}/{action}")
+        return await self._request("POST", f"{API_OUTFITS}/{_seg(outfit_id)}/{action}")
 
     async def async_post_outfit_feedback(
         self, outfit_id: str, payload: dict[str, Any]
     ) -> dict[str, Any]:
         return await self._request(
-            "POST", f"{API_OUTFITS}/{outfit_id}/feedback", json=payload
+            "POST", f"{API_OUTFITS}/{_seg(outfit_id)}/feedback", json=payload
         )
 
     async def async_log_wear(self, item_id: str, payload: dict[str, Any]) -> dict[str, Any]:
-        return await self._request("POST", f"{API_ITEMS}/{item_id}/wear", json=payload)
+        return await self._request("POST", f"{API_ITEMS}/{_seg(item_id)}/wear", json=payload)
 
     async def async_log_wash(self, item_id: str, payload: dict[str, Any]) -> dict[str, Any]:
-        return await self._request("POST", f"{API_ITEMS}/{item_id}/wash", json=payload)
+        return await self._request("POST", f"{API_ITEMS}/{_seg(item_id)}/wash", json=payload)
 
     async def async_archive_item(
         self, item_id: str, reason: str | None
     ) -> dict[str, Any]:
         body = {"reason": reason} if reason else {}
-        return await self._request("POST", f"{API_ITEMS}/{item_id}/archive", json=body)
+        return await self._request("POST", f"{API_ITEMS}/{_seg(item_id)}/archive", json=body)
 
     async def async_restore_item(self, item_id: str) -> dict[str, Any]:
-        return await self._request("POST", f"{API_ITEMS}/{item_id}/restore")
+        return await self._request("POST", f"{API_ITEMS}/{_seg(item_id)}/restore")
 
     async def async_test_notification(self, setting_id: str) -> dict[str, Any]:
         return await self._request(
-            "POST", f"{API_NOTIFICATIONS_SETTINGS}/{setting_id}/test"
+            "POST", f"{API_NOTIFICATIONS_SETTINGS}/{_seg(setting_id)}/test"
         )
+
+    async def async_fetch_image(
+        self, path: str, query_string: str
+    ) -> tuple[bytes, str]:
+        """Fetch a presigned image (no JWT: the URL signature gates access).
+
+        Returns ``(body, content_type)``; raises ``WardrowbeApiError`` with the
+        upstream status on a non-200, or 413 past ``MAX_IMAGE_BYTES``.
+        """
+        url = self._url(path)
+        if query_string:
+            url = f"{url}?{query_string}"
+        try:
+            async with self._session.get(
+                url,
+                ssl=self._verify_ssl,
+                timeout=aiohttp.ClientTimeout(total=DEFAULT_TIMEOUT),
+            ) as resp:
+                if resp.status != 200:
+                    raise WardrowbeApiError(
+                        f"image fetch → {resp.status}", status=resp.status
+                    )
+                body = bytearray()
+                async for chunk in resp.content.iter_chunked(64 * 1024):
+                    body.extend(chunk)
+                    if len(body) > MAX_IMAGE_BYTES:
+                        raise WardrowbeApiError("image too large", status=413)
+                content_type = resp.headers.get(
+                    "Content-Type", "application/octet-stream"
+                )
+        except (aiohttp.ClientError, TimeoutError) as err:
+            raise WardrowbeApiError(f"image fetch failed: {err}") from err
+        return bytes(body), content_type
 
     # ---- internals ----
 
     def _url(self, path: str) -> str:
         return f"{self._host}{path}"
 
-    async def _ensure_jwt(self, *, force: bool = False) -> str:
+    async def _ensure_jwt(self, *, stale: int | None = None) -> tuple[str, int]:
+        """Return ``(jwt, generation)``, re-syncing if expired or still ``stale``.
+
+        Passing the generation that just got a 401 as ``stale`` lets
+        concurrent requests share one re-sync instead of each forcing their own.
+        """
         async with self._sync_lock:
             now = datetime.now(UTC)
             if (
-                not force
-                and self._jwt
-                and self._jwt_expires_at
-                and self._jwt_expires_at - _JWT_REFRESH_LEEWAY > now
+                self._jwt
+                and self._jwt_generation != stale
+                and self._jwt_refresh_at
+                and self._jwt_refresh_at > now
             ):
-                return self._jwt
+                return self._jwt, self._jwt_generation
             try:
                 payload = await self._token_provider.async_get_sync_payload()
             except (aiohttp.ClientError, TimeoutError) as err:
@@ -374,13 +418,25 @@ class WardrowbeClient:
                     body = await resp.json(content_type=None)
             except (aiohttp.ClientError, TimeoutError) as err:
                 raise WardrowbeApiError(f"/auth/sync transport error: {err}") from err
+            except ValueError as err:
+                raise WardrowbeApiError(f"/auth/sync returned invalid JSON: {err}") from err
+            if not isinstance(body, dict):
+                raise WardrowbeApiError("/auth/sync returned a non-object body")
             jwt = body.get("access_token")
             if not jwt:
                 raise WardrowbeAuthError("/auth/sync did not return access_token")
-            ttl = int(body.get("expires_in", _DEFAULT_JWT_TTL_SECONDS))
+            try:
+                ttl = int(body.get("expires_in") or _DEFAULT_JWT_TTL_SECONDS)
+            except (TypeError, ValueError):
+                ttl = _DEFAULT_JWT_TTL_SECONDS
+            ttl = max(ttl, 1)
+            # Short-lived tokens would otherwise sit permanently inside the
+            # leeway and re-sync on every request.
+            leeway = min(_JWT_REFRESH_LEEWAY, timedelta(seconds=ttl / 2))
             self._jwt = jwt
-            self._jwt_expires_at = now + timedelta(seconds=ttl)
-            return jwt
+            self._jwt_refresh_at = now + timedelta(seconds=ttl) - leeway
+            self._jwt_generation += 1
+            return jwt, self._jwt_generation
 
     async def _request(
         self,
@@ -392,8 +448,9 @@ class WardrowbeClient:
     ) -> Any:
         last_status: int | None = None
         last_body: str | None = None
+        rejected: int | None = None
         for attempt in (0, 1):
-            jwt = await self._ensure_jwt(force=attempt == 1)
+            jwt, generation = await self._ensure_jwt(stale=rejected)
             try:
                 async with self._session.request(
                     method,
@@ -405,6 +462,7 @@ class WardrowbeClient:
                     timeout=aiohttp.ClientTimeout(total=DEFAULT_TIMEOUT),
                 ) as resp:
                     if resp.status == 401 and attempt == 0:
+                        rejected = generation
                         continue
                     last_status = resp.status
                     if resp.status >= 400:
@@ -424,6 +482,15 @@ class WardrowbeClient:
         )
 
 
+def _seg(value: str) -> str:
+    """Encode an id as one path segment so it can't traverse or add a query."""
+    value = str(value)
+    # Quoting leaves dots alone, and yarl collapses "."/".." segments.
+    if value in {"", ".", ".."}:
+        raise WardrowbeApiError(f"Invalid id: {value!r}", status=400)
+    return quote(value, safe="")
+
+
 def _coerce_list(data: Any) -> list[dict[str, Any]]:
     if isinstance(data, list):
         return data
@@ -435,7 +502,7 @@ def _coerce_list(data: Any) -> list[dict[str, Any]]:
     return []
 
 
-_IMAGE_URL_KEYS: tuple[str, ...] = (
+IMAGE_URL_KEYS: tuple[str, ...] = (
     "image_url",
     "thumbnail_url",
     "image_path",
@@ -466,7 +533,7 @@ def _resolve_image_urls(
         return
     if not isinstance(payload, dict):
         return
-    for key in _IMAGE_URL_KEYS:
+    for key in IMAGE_URL_KEYS:
         val = payload.get(key)
         if not isinstance(val, str) or not val.startswith("/"):
             continue
