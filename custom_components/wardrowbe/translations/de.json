@@ -1,0 +1,408 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Wardrowbe — Verbindung",
+        "description": "Gib die URL deiner Wardrowbe-Installation ein und wähle die Anmeldemethode.",
+        "data": {
+          "host": "Wardrowbe-URL",
+          "auth_mode": "Anmeldung",
+          "verify_ssl": "SSL-Zertifikat prüfen"
+        }
+      },
+      "oidc": {
+        "title": "Wardrowbe — OIDC",
+        "description": "Wardrowbe akzeptiert Anmeldungen nur über seinen eigenen OIDC-Client. Issuer-URL und Client-ID werden daher vom Server übernommen, sofern er sie veröffentlicht. Hat der Client kein Secret (z. B. der mobile Client von Wardrowbe), lass das Secret leer und PKCE aktiviert; andernfalls gib das Secret des Clients ein. Autorisierungs- und Token-URLs werden automatisch ermittelt.\n\nFüge bei deinem Identitätsanbieter einmalig diese Weiterleitungs-URI zum Client hinzu: `{redirect_uri}`",
+        "data": {
+          "issuer_url": "OIDC-Issuer-URL",
+          "client_id": "Client-ID",
+          "client_secret": "Client-Secret (bei öffentlichem Client leer lassen)",
+          "use_pkce": "PKCE verwenden",
+          "scopes": "Scopes"
+        }
+      },
+      "dev": {
+        "title": "Wardrowbe — Entwicklungsmodus",
+        "description": "Funktioniert nur mit Wardrowbe-Installationen im Entwicklungs-Anmeldemodus.",
+        "data": {
+          "external_id": "Externe ID"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Wardrowbe erneut anmelden",
+        "description": "Die gespeicherten Zugangsdaten sind nicht mehr gültig. Fahre fort, um dich neu anzumelden."
+      }
+    },
+    "error": {
+      "invalid_host": "Der Host muss eine vollständige URL mit Schema sein (http:// oder https://).",
+      "cannot_connect": "Wardrowbe ist nicht erreichbar.",
+      "auth_failed": "Anmeldung fehlgeschlagen.",
+      "issuer_discovery_failed": ".well-known/openid-configuration konnte nicht vom Issuer geladen werden.",
+      "pkce_required_without_secret": "Ein öffentlicher Client (ohne Client-Secret) muss PKCE verwenden."
+    },
+    "abort": {
+      "already_configured": "Dieses Wardrowbe-Konto ist bereits eingerichtet.",
+      "reauth_account_mismatch": "Das angemeldete Konto stimmt nicht mit dem vorhandenen Eintrag überein.",
+      "reconfigure_account_mismatch": "Das angemeldete Konto stimmt nicht mit dem vorhandenen Eintrag überein.",
+      "no_id_token": "Der OIDC-Anbieter hat kein id_token zurückgegeben.",
+      "no_user_id": "Wardrowbe hat keine Benutzerkennung zurückgegeben.",
+      "missing_oidc_config": "Die gespeicherte OIDC-Konfiguration ist unvollständig. Entferne den Eintrag und füge ihn erneut hinzu.",
+      "auth_failed": "Anmeldung fehlgeschlagen.",
+      "cannot_connect": "Wardrowbe ist nicht erreichbar."
+    }
+  },
+  "selector": {
+    "auth_mode": {
+      "options": {
+        "oidc": "OIDC / SSO",
+        "dev": "Entwicklungsmodus"
+      }
+    },
+    "common_occasions": {
+      "options": {
+        "beach": "Strand",
+        "brunch": "Brunch",
+        "business-casual": "Business Casual",
+        "casual": "Freizeit",
+        "date": "Date",
+        "dinner": "Abendessen",
+        "formal": "Formell",
+        "gym": "Fitnessstudio",
+        "hiking": "Wandern",
+        "interview": "Vorstellungsgespräch",
+        "lounge": "Zuhause",
+        "office": "Büro",
+        "outdoor": "Outdoor",
+        "party": "Party",
+        "running": "Laufen",
+        "smart-casual": "Smart Casual",
+        "sport": "Sport",
+        "sporty": "Sportlich",
+        "travel": "Reise",
+        "wedding": "Hochzeit",
+        "weekend": "Wochenende",
+        "work": "Arbeit"
+      }
+    },
+    "common_time_of_day": {
+      "options": {
+        "morning": "Morgen",
+        "afternoon": "Nachmittag",
+        "evening": "Abend",
+        "night": "Nacht",
+        "full_day": "Ganzer Tag"
+      }
+    },
+    "common_colors": {
+      "options": {
+        "beige": "Beige",
+        "black": "Schwarz",
+        "blue": "Blau",
+        "brown": "Braun",
+        "cream": "Creme",
+        "gold": "Gold",
+        "gray": "Grau",
+        "green": "Grün",
+        "khaki": "Khaki",
+        "maroon": "Kastanienbraun",
+        "mixed": "Gemischt",
+        "multicolor": "Mehrfarbig",
+        "navy": "Marineblau",
+        "olive": "Oliv",
+        "orange": "Orange",
+        "pink": "Rosa",
+        "purple": "Lila",
+        "red": "Rot",
+        "silver": "Silber",
+        "tan": "Hellbraun",
+        "teal": "Petrol",
+        "white": "Weiß",
+        "yellow": "Gelb"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "total_items": { "name": "Stücke gesamt" },
+      "items_ready": { "name": "Bereite Stücke" },
+      "items_processing": { "name": "Stücke in Bearbeitung" },
+      "items_archived": { "name": "Archivierte Stücke" },
+      "total_outfits": { "name": "Outfits gesamt" },
+      "outfits_this_week": { "name": "Outfits diese Woche" },
+      "outfits_this_month": { "name": "Outfits diesen Monat" },
+      "acceptance_rate": { "name": "Annahmequote" },
+      "average_rating": { "name": "Durchschnittsbewertung" },
+      "total_wears": { "name": "Getragen gesamt" },
+      "most_worn_item": { "name": "Am häufigsten getragenes Stück" },
+      "top_color": {
+        "name": "Häufigste Farbe",
+        "state": {
+          "beige": "Beige",
+          "black": "Schwarz",
+          "blue": "Blau",
+          "brown": "Braun",
+          "cream": "Creme",
+          "gold": "Gold",
+          "gray": "Grau",
+          "green": "Grün",
+          "khaki": "Khaki",
+          "maroon": "Kastanienbraun",
+          "mixed": "Gemischt",
+          "multicolor": "Mehrfarbig",
+          "navy": "Marineblau",
+          "olive": "Oliv",
+          "orange": "Orange",
+          "pink": "Rosa",
+          "purple": "Lila",
+          "red": "Rot",
+          "silver": "Silber",
+          "tan": "Hellbraun",
+          "teal": "Petrol",
+          "white": "Weiß",
+          "yellow": "Gelb"
+        }
+      },
+      "last_outfit_status": { "name": "Status des letzten Outfits" },
+      "notifications_last_24h": { "name": "Benachrichtigungen (24 h)" }
+    },
+    "binary_sensor": {
+      "api_healthy": { "name": "API erreichbar" },
+      "has_pending_outfit": { "name": "Ausstehender Outfit-Vorschlag" }
+    },
+    "event": {
+      "outfit": { "name": "Outfit-Verlauf" },
+      "notification": { "name": "Benachrichtigung" },
+      "wear": { "name": "Tragen erfasst" },
+      "wash": { "name": "Wäsche erfasst" }
+    },
+    "todo": {
+      "to_wash": { "name": "Zu waschende Stücke" }
+    }
+  },
+  "services": {
+    "suggest_outfit": {
+      "name": "Outfit vorschlagen",
+      "description": "Erstellt einen neuen Outfit-Vorschlag.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Konto",
+          "description": "Das Wardrowbe-Konto (Konfigurationseintrag), auf das sich die Aktion bezieht."
+        },
+        "occasion": {
+          "name": "Anlass",
+          "description": "Wofür das Outfit ist, z. B. Büro, Freizeit oder Date."
+        },
+        "time_of_day": {
+          "name": "Tageszeit",
+          "description": "Wann das Outfit getragen wird: morning, afternoon, evening, night oder full_day."
+        },
+        "target_date": {
+          "name": "Datum",
+          "description": "Der Tag, für den das Outfit gedacht ist. Standard ist heute."
+        },
+        "notes": {
+          "name": "Notizen",
+          "description": "Freitext-Hinweise, z. B. „es regnet“ oder „Kundentermin“."
+        }
+      }
+    },
+    "create_outfit_suggestion": {
+      "name": "Outfit-Vorschlag erstellen",
+      "description": "Speichert ein selbst gewähltes Outfit (per Stück-IDs) als ausstehenden Vorschlag. Funktioniert auch, wenn die interne KI von Wardrowbe deaktiviert ist.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Konto",
+          "description": "Das Wardrowbe-Konto (Konfigurationseintrag), auf das sich die Aktion bezieht."
+        },
+        "item_ids": {
+          "name": "Stück-IDs",
+          "description": "1 bis 20 Wardrowbe-Stück-IDs, aus denen das Outfit besteht, z. B. Oberteil, Unterteil und Schuhe."
+        },
+        "occasion": {
+          "name": "Anlass",
+          "description": "Wofür das Outfit ist, z. B. Büro, Freizeit oder Date."
+        },
+        "name": {
+          "name": "Name",
+          "description": "Optionaler Name für das Outfit."
+        },
+        "scheduled_for": {
+          "name": "Datum",
+          "description": "Der Tag, für den das Outfit gedacht ist. Standard ist heute."
+        },
+        "reasoning": {
+          "name": "Begründung",
+          "description": "Warum diese Stücke zusammenpassen; wird mit dem Vorschlag angezeigt."
+        },
+        "notes": {
+          "name": "Notizen",
+          "description": "Zusätzliche Notizen, die mit dem Outfit gespeichert werden."
+        }
+      }
+    },
+    "accept_outfit": {
+      "name": "Outfit annehmen",
+      "description": "Markiert einen Outfit-Vorschlag als angenommen.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Konto",
+          "description": "Das Wardrowbe-Konto (Konfigurationseintrag), auf das sich die Aktion bezieht."
+        },
+        "outfit_id": {
+          "name": "Outfit-ID",
+          "description": "Das betroffene Outfit. Leer lassen, um das neueste ausstehende Outfit zu verwenden."
+        }
+      }
+    },
+    "reject_outfit": {
+      "name": "Outfit ablehnen",
+      "description": "Markiert einen Outfit-Vorschlag als abgelehnt.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Konto",
+          "description": "Das Wardrowbe-Konto (Konfigurationseintrag), auf das sich die Aktion bezieht."
+        },
+        "outfit_id": {
+          "name": "Outfit-ID",
+          "description": "Das betroffene Outfit. Leer lassen, um das neueste ausstehende Outfit zu verwenden."
+        }
+      }
+    },
+    "skip_outfit": {
+      "name": "Outfit überspringen",
+      "description": "Markiert einen Outfit-Vorschlag als übersprungen.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Konto",
+          "description": "Das Wardrowbe-Konto (Konfigurationseintrag), auf das sich die Aktion bezieht."
+        },
+        "outfit_id": {
+          "name": "Outfit-ID",
+          "description": "Das betroffene Outfit. Leer lassen, um das neueste ausstehende Outfit zu verwenden."
+        }
+      }
+    },
+    "submit_feedback": {
+      "name": "Outfit bewerten",
+      "description": "Sendet eine Bewertung und optionale Notizen zu einem Outfit.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Konto",
+          "description": "Das Wardrowbe-Konto (Konfigurationseintrag), auf das sich die Aktion bezieht."
+        },
+        "outfit_id": {
+          "name": "Outfit-ID",
+          "description": "Das zu bewertende Outfit."
+        },
+        "rating": {
+          "name": "Bewertung",
+          "description": "Bewertung von 1 (schlechteste) bis 5 (beste)."
+        },
+        "wore": {
+          "name": "Getragen",
+          "description": "Ob das Outfit tatsächlich getragen wurde."
+        },
+        "notes": {
+          "name": "Notizen",
+          "description": "Freitext-Feedback."
+        }
+      }
+    },
+    "log_wear": {
+      "name": "Tragen erfassen",
+      "description": "Erfasst, dass ein Stück getragen wurde.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Konto",
+          "description": "Das Wardrowbe-Konto (Konfigurationseintrag), auf das sich die Aktion bezieht."
+        },
+        "item_id": {
+          "name": "Stück-ID",
+          "description": "Die Wardrowbe-ID des Kleidungsstücks."
+        },
+        "date": {
+          "name": "Datum",
+          "description": "Der Tag, an dem es getragen wurde. Standard ist heute."
+        }
+      }
+    },
+    "log_wash": {
+      "name": "Als gewaschen markieren",
+      "description": "Erfasst, dass ein Stück gewaschen wurde.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Konto",
+          "description": "Das Wardrowbe-Konto (Konfigurationseintrag), auf das sich die Aktion bezieht."
+        },
+        "item_id": {
+          "name": "Stück-ID",
+          "description": "Die Wardrowbe-ID des Kleidungsstücks."
+        }
+      }
+    },
+    "archive_item": {
+      "name": "Stück archivieren",
+      "description": "Archiviert ein Stück.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Konto",
+          "description": "Das Wardrowbe-Konto (Konfigurationseintrag), auf das sich die Aktion bezieht."
+        },
+        "item_id": {
+          "name": "Stück-ID",
+          "description": "Die Wardrowbe-ID des Kleidungsstücks."
+        },
+        "reason": {
+          "name": "Grund",
+          "description": "Warum das Stück archiviert wird, z. B. gespendet oder abgetragen."
+        }
+      }
+    },
+    "restore_item": {
+      "name": "Stück wiederherstellen",
+      "description": "Stellt ein zuvor archiviertes Stück wieder her.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Konto",
+          "description": "Das Wardrowbe-Konto (Konfigurationseintrag), auf das sich die Aktion bezieht."
+        },
+        "item_id": {
+          "name": "Stück-ID",
+          "description": "Die Wardrowbe-ID des Kleidungsstücks."
+        }
+      }
+    },
+    "test_notification": {
+      "name": "Testbenachrichtigung",
+      "description": "Sendet eine Testbenachrichtigung über eine eingerichtete Einstellung.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Konto",
+          "description": "Das Wardrowbe-Konto (Konfigurationseintrag), auf das sich die Aktion bezieht."
+        },
+        "setting_id": {
+          "name": "ID der Benachrichtigungseinstellung",
+          "description": "Die Wardrowbe-Benachrichtigungseinstellung, über die der Test gesendet wird."
+        }
+      }
+    },
+    "get_summary": {
+      "name": "Übersicht abrufen",
+      "description": "Liefert die aktuellen Statistiken, Outfits, zu waschenden Stücke und Benachrichtigungen.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Konto",
+          "description": "Das Wardrowbe-Konto (Konfigurationseintrag), auf das sich die Aktion bezieht."
+        },
+        "exclude_statuses": {
+          "name": "Status ausschließen",
+          "description": "Outfits mit diesen Status auslassen (pending, sent, accepted, rejected oder skipped)."
+        },
+        "include_statuses": {
+          "name": "Status einschließen",
+          "description": "Nur Outfits mit diesen Status zurückgeben (pending, sent, accepted, rejected oder skipped)."
+        }
+      }
+    }
+  }
+}

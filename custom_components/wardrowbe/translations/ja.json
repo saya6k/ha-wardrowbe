@@ -1,0 +1,408 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Wardrowbe — 接続",
+        "description": "Wardrowbe の URL を入力し、認証方法を選択してください。",
+        "data": {
+          "host": "Wardrowbe の URL",
+          "auth_mode": "認証",
+          "verify_ssl": "SSL 証明書を検証"
+        }
+      },
+      "oidc": {
+        "title": "Wardrowbe — OIDC",
+        "description": "Wardrowbe は自身の OIDC クライアント経由のサインインのみを受け付けるため、サーバーが公開していれば issuer URL とクライアント ID が自動入力されます。シークレットのないクライアント（Wardrowbe のモバイルクライアントなど）の場合は、シークレットを空のままにして PKCE を有効にしてください。それ以外の場合はクライアントのシークレットを入力してください。認可/トークン URL は自動で検出されます。\n\nID プロバイダーで、このクライアントのリダイレクト URI に次のアドレスを一度追加してください: `{redirect_uri}`",
+        "data": {
+          "issuer_url": "OIDC issuer URL",
+          "client_id": "クライアント ID",
+          "client_secret": "クライアントシークレット（パブリッククライアントの場合は空欄）",
+          "use_pkce": "PKCE を使用",
+          "scopes": "スコープ"
+        }
+      },
+      "dev": {
+        "title": "Wardrowbe — 開発モード",
+        "description": "開発用認証モードで動作している Wardrowbe でのみ使用できます。",
+        "data": {
+          "external_id": "External ID"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Wardrowbe を再認証",
+        "description": "保存されている認証情報は無効になりました。続行すると新しくログインします。"
+      }
+    },
+    "error": {
+      "invalid_host": "スキーム（http:// または https://）を含む完全な URL を入力してください。",
+      "cannot_connect": "Wardrowbe に接続できませんでした。",
+      "auth_failed": "認証に失敗しました。",
+      "issuer_discovery_failed": "issuer から .well-known/openid-configuration を読み込めませんでした。",
+      "pkce_required_without_secret": "パブリッククライアント（シークレットなし）は PKCE を使用する必要があります。"
+    },
+    "abort": {
+      "already_configured": "この Wardrowbe アカウントはすでに設定されています。",
+      "reauth_account_mismatch": "認証されたアカウントが既存のエントリと一致しません。",
+      "reconfigure_account_mismatch": "認証されたアカウントが既存のエントリと一致しません。",
+      "no_id_token": "OIDC プロバイダーが id_token を返しませんでした。",
+      "no_user_id": "Wardrowbe がユーザー識別子を返しませんでした。",
+      "missing_oidc_config": "保存された OIDC 設定が不完全です。エントリを削除して追加し直してください。",
+      "auth_failed": "認証に失敗しました。",
+      "cannot_connect": "Wardrowbe に接続できませんでした。"
+    }
+  },
+  "selector": {
+    "auth_mode": {
+      "options": {
+        "oidc": "OIDC / SSO",
+        "dev": "開発モード"
+      }
+    },
+    "common_occasions": {
+      "options": {
+        "beach": "ビーチ",
+        "brunch": "ブランチ",
+        "business-casual": "ビジネスカジュアル",
+        "casual": "カジュアル",
+        "date": "デート",
+        "dinner": "ディナー",
+        "formal": "フォーマル",
+        "gym": "ジム",
+        "hiking": "ハイキング",
+        "interview": "面接",
+        "lounge": "ラウンジ",
+        "office": "オフィス",
+        "outdoor": "アウトドア",
+        "party": "パーティー",
+        "running": "ランニング",
+        "smart-casual": "スマートカジュアル",
+        "sport": "スポーツ",
+        "sporty": "スポーティ",
+        "travel": "旅行",
+        "wedding": "結婚式",
+        "weekend": "週末",
+        "work": "仕事"
+      }
+    },
+    "common_time_of_day": {
+      "options": {
+        "morning": "朝",
+        "afternoon": "午後",
+        "evening": "夕方",
+        "night": "夜",
+        "full_day": "終日"
+      }
+    },
+    "common_colors": {
+      "options": {
+        "beige": "ベージュ",
+        "black": "黒",
+        "blue": "青",
+        "brown": "ブラウン",
+        "cream": "クリーム",
+        "gold": "ゴールド",
+        "gray": "グレー",
+        "green": "緑",
+        "khaki": "カーキ",
+        "maroon": "マルーン",
+        "mixed": "ミックス",
+        "multicolor": "マルチカラー",
+        "navy": "ネイビー",
+        "olive": "オリーブ",
+        "orange": "オレンジ",
+        "pink": "ピンク",
+        "purple": "パープル",
+        "red": "赤",
+        "silver": "シルバー",
+        "tan": "タン",
+        "teal": "ティール",
+        "white": "白",
+        "yellow": "イエロー"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "total_items": { "name": "アイテム総数" },
+      "items_ready": { "name": "準備済みアイテム" },
+      "items_processing": { "name": "処理中のアイテム" },
+      "items_archived": { "name": "アーカイブ済みアイテム" },
+      "total_outfits": { "name": "コーデ総数" },
+      "outfits_this_week": { "name": "今週のコーデ" },
+      "outfits_this_month": { "name": "今月のコーデ" },
+      "acceptance_rate": { "name": "承認率" },
+      "average_rating": { "name": "平均評価" },
+      "total_wears": { "name": "着用回数合計" },
+      "most_worn_item": { "name": "最も着用したアイテム" },
+      "top_color": {
+        "name": "最も多い色",
+        "state": {
+          "beige": "ベージュ",
+          "black": "黒",
+          "blue": "青",
+          "brown": "ブラウン",
+          "cream": "クリーム",
+          "gold": "ゴールド",
+          "gray": "グレー",
+          "green": "緑",
+          "khaki": "カーキ",
+          "maroon": "マルーン",
+          "mixed": "ミックス",
+          "multicolor": "マルチカラー",
+          "navy": "ネイビー",
+          "olive": "オリーブ",
+          "orange": "オレンジ",
+          "pink": "ピンク",
+          "purple": "パープル",
+          "red": "赤",
+          "silver": "シルバー",
+          "tan": "タン",
+          "teal": "ティール",
+          "white": "白",
+          "yellow": "イエロー"
+        }
+      },
+      "last_outfit_status": { "name": "最新コーデのステータス" },
+      "notifications_last_24h": { "name": "通知（24 時間）" }
+    },
+    "binary_sensor": {
+      "api_healthy": { "name": "API 正常" },
+      "has_pending_outfit": { "name": "保留中のコーデ提案" }
+    },
+    "event": {
+      "outfit": { "name": "コーデの進行状況" },
+      "notification": { "name": "通知" },
+      "wear": { "name": "着用を記録" },
+      "wash": { "name": "洗濯を記録" }
+    },
+    "todo": {
+      "to_wash": { "name": "洗濯が必要なアイテム" }
+    }
+  },
+  "services": {
+    "suggest_outfit": {
+      "name": "コーディネート提案",
+      "description": "新しいコーデの提案を作成します。",
+      "fields": {
+        "config_entry_id": {
+          "name": "アカウント",
+          "description": "操作対象の Wardrowbe アカウント（設定エントリ）。"
+        },
+        "occasion": {
+          "name": "シーン",
+          "description": "コーデの用途です。例: オフィス、カジュアル、デート。"
+        },
+        "time_of_day": {
+          "name": "時間帯",
+          "description": "コーデを着る時間帯: morning、afternoon、evening、night、full_day。"
+        },
+        "target_date": {
+          "name": "日付",
+          "description": "着る日です。省略すると今日になります。"
+        },
+        "notes": {
+          "name": "メモ",
+          "description": "自由記述のヒント。例:「雨が降っている」「取引先と会う」。"
+        }
+      }
+    },
+    "create_outfit_suggestion": {
+      "name": "コーデ提案を作成",
+      "description": "選んだアイテム（ID）でコーデを作り、保留中の提案として保存します。Wardrowbe の内蔵 AI が無効でも動作します。",
+      "fields": {
+        "config_entry_id": {
+          "name": "アカウント",
+          "description": "操作対象の Wardrowbe アカウント（設定エントリ）。"
+        },
+        "item_ids": {
+          "name": "アイテム ID",
+          "description": "コーデを構成する Wardrowbe のアイテム ID（1〜20 個）。例: トップス、ボトムス、シューズ。"
+        },
+        "occasion": {
+          "name": "シーン",
+          "description": "コーデの用途です。例: オフィス、カジュアル、デート。"
+        },
+        "name": {
+          "name": "名前",
+          "description": "コーデの名前（任意）。"
+        },
+        "scheduled_for": {
+          "name": "日付",
+          "description": "コーデを着る日です。省略すると今日になります。"
+        },
+        "reasoning": {
+          "name": "理由",
+          "description": "これらのアイテムが合う理由。提案と一緒に表示されます。"
+        },
+        "notes": {
+          "name": "メモ",
+          "description": "コーデと一緒に保存するメモ。"
+        }
+      }
+    },
+    "accept_outfit": {
+      "name": "コーデを承認",
+      "description": "コーデの提案を承認済みにします。",
+      "fields": {
+        "config_entry_id": {
+          "name": "アカウント",
+          "description": "操作対象の Wardrowbe アカウント（設定エントリ）。"
+        },
+        "outfit_id": {
+          "name": "コーデ ID",
+          "description": "対象のコーデ。空欄の場合は最新の保留中のコーデに適用します。"
+        }
+      }
+    },
+    "reject_outfit": {
+      "name": "コーデを却下",
+      "description": "コーデの提案を却下済みにします。",
+      "fields": {
+        "config_entry_id": {
+          "name": "アカウント",
+          "description": "操作対象の Wardrowbe アカウント（設定エントリ）。"
+        },
+        "outfit_id": {
+          "name": "コーデ ID",
+          "description": "対象のコーデ。空欄の場合は最新の保留中のコーデに適用します。"
+        }
+      }
+    },
+    "skip_outfit": {
+      "name": "コーデをスキップ",
+      "description": "コーデの提案をスキップ済みにします。",
+      "fields": {
+        "config_entry_id": {
+          "name": "アカウント",
+          "description": "操作対象の Wardrowbe アカウント（設定エントリ）。"
+        },
+        "outfit_id": {
+          "name": "コーデ ID",
+          "description": "対象のコーデ。空欄の場合は最新の保留中のコーデに適用します。"
+        }
+      }
+    },
+    "submit_feedback": {
+      "name": "コーデを評価",
+      "description": "コーデに評価と任意のメモを送信します。",
+      "fields": {
+        "config_entry_id": {
+          "name": "アカウント",
+          "description": "操作対象の Wardrowbe アカウント（設定エントリ）。"
+        },
+        "outfit_id": {
+          "name": "コーデ ID",
+          "description": "評価するコーデ。"
+        },
+        "rating": {
+          "name": "評価",
+          "description": "1（最低）から 5（最高）までの評価。"
+        },
+        "wore": {
+          "name": "着用済み",
+          "description": "実際にこのコーデを着たかどうか。"
+        },
+        "notes": {
+          "name": "メモ",
+          "description": "自由記述のフィードバック。"
+        }
+      }
+    },
+    "log_wear": {
+      "name": "着用を記録",
+      "description": "アイテムの着用を記録します。",
+      "fields": {
+        "config_entry_id": {
+          "name": "アカウント",
+          "description": "操作対象の Wardrowbe アカウント（設定エントリ）。"
+        },
+        "item_id": {
+          "name": "アイテム ID",
+          "description": "衣類アイテムの Wardrowbe ID。"
+        },
+        "date": {
+          "name": "日付",
+          "description": "着用した日です。省略すると今日になります。"
+        }
+      }
+    },
+    "log_wash": {
+      "name": "洗濯済みにする",
+      "description": "アイテムの洗濯を記録します。",
+      "fields": {
+        "config_entry_id": {
+          "name": "アカウント",
+          "description": "操作対象の Wardrowbe アカウント（設定エントリ）。"
+        },
+        "item_id": {
+          "name": "アイテム ID",
+          "description": "衣類アイテムの Wardrowbe ID。"
+        }
+      }
+    },
+    "archive_item": {
+      "name": "アイテムをアーカイブ",
+      "description": "アイテムをアーカイブします。",
+      "fields": {
+        "config_entry_id": {
+          "name": "アカウント",
+          "description": "操作対象の Wardrowbe アカウント（設定エントリ）。"
+        },
+        "item_id": {
+          "name": "アイテム ID",
+          "description": "衣類アイテムの Wardrowbe ID。"
+        },
+        "reason": {
+          "name": "理由",
+          "description": "アーカイブする理由。例: 寄付、着古し。"
+        }
+      }
+    },
+    "restore_item": {
+      "name": "アイテムを復元",
+      "description": "アーカイブしたアイテムを復元します。",
+      "fields": {
+        "config_entry_id": {
+          "name": "アカウント",
+          "description": "操作対象の Wardrowbe アカウント（設定エントリ）。"
+        },
+        "item_id": {
+          "name": "アイテム ID",
+          "description": "衣類アイテムの Wardrowbe ID。"
+        }
+      }
+    },
+    "test_notification": {
+      "name": "テスト通知",
+      "description": "設定済みの通知設定でテスト通知を送信します。",
+      "fields": {
+        "config_entry_id": {
+          "name": "アカウント",
+          "description": "操作対象の Wardrowbe アカウント（設定エントリ）。"
+        },
+        "setting_id": {
+          "name": "通知設定 ID",
+          "description": "テスト通知を送る Wardrowbe の通知設定。"
+        }
+      }
+    },
+    "get_summary": {
+      "name": "概要を取得",
+      "description": "最新の分析、コーデ、洗濯が必要なアイテム、通知を返します。",
+      "fields": {
+        "config_entry_id": {
+          "name": "アカウント",
+          "description": "操作対象の Wardrowbe アカウント（設定エントリ）。"
+        },
+        "exclude_statuses": {
+          "name": "除外するステータス",
+          "description": "これらのステータスのコーデを除外します（pending、sent、accepted、rejected、skipped）。"
+        },
+        "include_statuses": {
+          "name": "含めるステータス",
+          "description": "これらのステータスのコーデのみを返します（pending、sent、accepted、rejected、skipped）。"
+        }
+      }
+    }
+  }
+}

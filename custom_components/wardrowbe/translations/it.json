@@ -1,0 +1,408 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Wardrowbe — connessione",
+        "description": "Inserisci l'URL della tua installazione Wardrowbe e scegli come autenticarti.",
+        "data": {
+          "host": "URL di Wardrowbe",
+          "auth_mode": "Autenticazione",
+          "verify_ssl": "Verifica il certificato SSL"
+        }
+      },
+      "oidc": {
+        "title": "Wardrowbe — OIDC",
+        "description": "Wardrowbe accetta solo accessi tramite il proprio client OIDC, quindi l'URL dell'issuer e l'ID client vengono compilati dal server quando li pubblica. Se il client non ha un secret (come il client mobile di Wardrowbe), lascia vuoto il secret e mantieni attivo PKCE; altrimenti inserisci il secret del client. Gli URL di autorizzazione e token vengono rilevati automaticamente.\n\nNel tuo provider di identità, aggiungi una volta questo URI di reindirizzamento al client: `{redirect_uri}`",
+        "data": {
+          "issuer_url": "URL dell'issuer OIDC",
+          "client_id": "ID client",
+          "client_secret": "Secret client (lascia vuoto per un client pubblico)",
+          "use_pkce": "Usa PKCE",
+          "scopes": "Ambiti"
+        }
+      },
+      "dev": {
+        "title": "Wardrowbe — modalità sviluppo",
+        "description": "Funziona solo con installazioni Wardrowbe in modalità di autenticazione di sviluppo.",
+        "data": {
+          "external_id": "ID esterno"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Riautentica Wardrowbe",
+        "description": "Le credenziali salvate non sono più valide. Continua per accedere di nuovo."
+      }
+    },
+    "error": {
+      "invalid_host": "L'host deve essere un URL completo con lo schema (http:// o https://).",
+      "cannot_connect": "Impossibile raggiungere Wardrowbe.",
+      "auth_failed": "Autenticazione non riuscita.",
+      "issuer_discovery_failed": "Impossibile caricare .well-known/openid-configuration dall'issuer.",
+      "pkce_required_without_secret": "Un client pubblico (senza secret) deve usare PKCE."
+    },
+    "abort": {
+      "already_configured": "Questo account Wardrowbe è già configurato.",
+      "reauth_account_mismatch": "L'account autenticato non corrisponde alla voce esistente.",
+      "reconfigure_account_mismatch": "L'account autenticato non corrisponde alla voce esistente.",
+      "no_id_token": "Il provider OIDC non ha restituito un id_token.",
+      "no_user_id": "Wardrowbe non ha restituito un identificativo utente.",
+      "missing_oidc_config": "La configurazione OIDC salvata è incompleta; rimuovi e aggiungi di nuovo la voce.",
+      "auth_failed": "Autenticazione non riuscita.",
+      "cannot_connect": "Impossibile raggiungere Wardrowbe."
+    }
+  },
+  "selector": {
+    "auth_mode": {
+      "options": {
+        "oidc": "OIDC / SSO",
+        "dev": "Modalità sviluppo"
+      }
+    },
+    "common_occasions": {
+      "options": {
+        "beach": "Spiaggia",
+        "brunch": "Brunch",
+        "business-casual": "Business casual",
+        "casual": "Casual",
+        "date": "Appuntamento",
+        "dinner": "Cena",
+        "formal": "Formale",
+        "gym": "Palestra",
+        "hiking": "Escursionismo",
+        "interview": "Colloquio",
+        "lounge": "Relax",
+        "office": "Ufficio",
+        "outdoor": "All'aperto",
+        "party": "Festa",
+        "running": "Corsa",
+        "smart-casual": "Smart casual",
+        "sport": "Sport",
+        "sporty": "Sportivo",
+        "travel": "Viaggio",
+        "wedding": "Matrimonio",
+        "weekend": "Fine settimana",
+        "work": "Lavoro"
+      }
+    },
+    "common_time_of_day": {
+      "options": {
+        "morning": "Mattina",
+        "afternoon": "Pomeriggio",
+        "evening": "Sera",
+        "night": "Notte",
+        "full_day": "Tutto il giorno"
+      }
+    },
+    "common_colors": {
+      "options": {
+        "beige": "Beige",
+        "black": "Nero",
+        "blue": "Blu",
+        "brown": "Marrone",
+        "cream": "Crema",
+        "gold": "Oro",
+        "gray": "Grigio",
+        "green": "Verde",
+        "khaki": "Cachi",
+        "maroon": "Marrone rossiccio",
+        "mixed": "Misto",
+        "multicolor": "Multicolore",
+        "navy": "Blu navy",
+        "olive": "Oliva",
+        "orange": "Arancione",
+        "pink": "Rosa",
+        "purple": "Viola",
+        "red": "Rosso",
+        "silver": "Argento",
+        "tan": "Marrone chiaro",
+        "teal": "Verde acqua",
+        "white": "Bianco",
+        "yellow": "Giallo"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "total_items": { "name": "Totale capi" },
+      "items_ready": { "name": "Capi pronti" },
+      "items_processing": { "name": "Capi in elaborazione" },
+      "items_archived": { "name": "Capi archiviati" },
+      "total_outfits": { "name": "Totale outfit" },
+      "outfits_this_week": { "name": "Outfit questa settimana" },
+      "outfits_this_month": { "name": "Outfit questo mese" },
+      "acceptance_rate": { "name": "Tasso di accettazione" },
+      "average_rating": { "name": "Valutazione media" },
+      "total_wears": { "name": "Utilizzi totali" },
+      "most_worn_item": { "name": "Capo più indossato" },
+      "top_color": {
+        "name": "Colore principale",
+        "state": {
+          "beige": "Beige",
+          "black": "Nero",
+          "blue": "Blu",
+          "brown": "Marrone",
+          "cream": "Crema",
+          "gold": "Oro",
+          "gray": "Grigio",
+          "green": "Verde",
+          "khaki": "Cachi",
+          "maroon": "Marrone rossiccio",
+          "mixed": "Misto",
+          "multicolor": "Multicolore",
+          "navy": "Blu navy",
+          "olive": "Oliva",
+          "orange": "Arancione",
+          "pink": "Rosa",
+          "purple": "Viola",
+          "red": "Rosso",
+          "silver": "Argento",
+          "tan": "Marrone chiaro",
+          "teal": "Verde acqua",
+          "white": "Bianco",
+          "yellow": "Giallo"
+        }
+      },
+      "last_outfit_status": { "name": "Stato dell'ultimo outfit" },
+      "notifications_last_24h": { "name": "Notifiche (24 h)" }
+    },
+    "binary_sensor": {
+      "api_healthy": { "name": "API operativa" },
+      "has_pending_outfit": { "name": "Suggerimento di outfit in attesa" }
+    },
+    "event": {
+      "outfit": { "name": "Ciclo di vita dell'outfit" },
+      "notification": { "name": "Notifica" },
+      "wear": { "name": "Utilizzo registrato" },
+      "wash": { "name": "Lavaggio registrato" }
+    },
+    "todo": {
+      "to_wash": { "name": "Capi da lavare" }
+    }
+  },
+  "services": {
+    "suggest_outfit": {
+      "name": "Suggerisci outfit",
+      "description": "Genera un nuovo suggerimento di outfit.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "L'account Wardrowbe (voce di configurazione) su cui agire."
+        },
+        "occasion": {
+          "name": "Occasione",
+          "description": "A cosa serve l'outfit, ad es. ufficio, casual o appuntamento."
+        },
+        "time_of_day": {
+          "name": "Momento della giornata",
+          "description": "Quando verrà indossato l'outfit: morning, afternoon, evening, night o full_day."
+        },
+        "target_date": {
+          "name": "Data",
+          "description": "Il giorno per cui vestirsi. Predefinito: oggi."
+        },
+        "notes": {
+          "name": "Note",
+          "description": "Suggerimenti liberi, ad es. \"piove\" o \"incontro con un cliente\"."
+        }
+      }
+    },
+    "create_outfit_suggestion": {
+      "name": "Crea suggerimento di outfit",
+      "description": "Salva un outfit scelto da te (tramite ID dei capi) come suggerimento in attesa. Funziona anche se l'IA interna di Wardrowbe è disattivata.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "L'account Wardrowbe (voce di configurazione) su cui agire."
+        },
+        "item_ids": {
+          "name": "ID dei capi",
+          "description": "Da 1 a 20 ID di capi Wardrowbe che compongono l'outfit, ad es. sopra, sotto e scarpe."
+        },
+        "occasion": {
+          "name": "Occasione",
+          "description": "A cosa serve l'outfit, ad es. ufficio, casual o appuntamento."
+        },
+        "name": {
+          "name": "Nome",
+          "description": "Nome facoltativo dell'outfit."
+        },
+        "scheduled_for": {
+          "name": "Data",
+          "description": "Il giorno a cui è destinato l'outfit. Predefinito: oggi."
+        },
+        "reasoning": {
+          "name": "Motivazione",
+          "description": "Perché questi capi stanno bene insieme; mostrato con il suggerimento."
+        },
+        "notes": {
+          "name": "Note",
+          "description": "Note aggiuntive salvate con l'outfit."
+        }
+      }
+    },
+    "accept_outfit": {
+      "name": "Accetta outfit",
+      "description": "Segna un suggerimento di outfit come accettato.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "L'account Wardrowbe (voce di configurazione) su cui agire."
+        },
+        "outfit_id": {
+          "name": "ID outfit",
+          "description": "L'outfit su cui agire. Lascia vuoto per usare l'ultimo outfit in attesa."
+        }
+      }
+    },
+    "reject_outfit": {
+      "name": "Rifiuta outfit",
+      "description": "Segna un suggerimento di outfit come rifiutato.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "L'account Wardrowbe (voce di configurazione) su cui agire."
+        },
+        "outfit_id": {
+          "name": "ID outfit",
+          "description": "L'outfit su cui agire. Lascia vuoto per usare l'ultimo outfit in attesa."
+        }
+      }
+    },
+    "skip_outfit": {
+      "name": "Salta outfit",
+      "description": "Segna un suggerimento di outfit come saltato.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "L'account Wardrowbe (voce di configurazione) su cui agire."
+        },
+        "outfit_id": {
+          "name": "ID outfit",
+          "description": "L'outfit su cui agire. Lascia vuoto per usare l'ultimo outfit in attesa."
+        }
+      }
+    },
+    "submit_feedback": {
+      "name": "Valuta outfit",
+      "description": "Invia una valutazione e note facoltative per un outfit.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "L'account Wardrowbe (voce di configurazione) su cui agire."
+        },
+        "outfit_id": {
+          "name": "ID outfit",
+          "description": "L'outfit da valutare."
+        },
+        "rating": {
+          "name": "Valutazione",
+          "description": "Valutazione da 1 (peggiore) a 5 (migliore)."
+        },
+        "wore": {
+          "name": "Indossato",
+          "description": "Se l'outfit è stato effettivamente indossato."
+        },
+        "notes": {
+          "name": "Note",
+          "description": "Feedback libero."
+        }
+      }
+    },
+    "log_wear": {
+      "name": "Registra utilizzo",
+      "description": "Registra un utilizzo per un capo.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "L'account Wardrowbe (voce di configurazione) su cui agire."
+        },
+        "item_id": {
+          "name": "ID del capo",
+          "description": "L'ID Wardrowbe del capo."
+        },
+        "date": {
+          "name": "Data",
+          "description": "Il giorno in cui è stato indossato. Predefinito: oggi."
+        }
+      }
+    },
+    "log_wash": {
+      "name": "Segna come lavato",
+      "description": "Registra un lavaggio per un capo.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "L'account Wardrowbe (voce di configurazione) su cui agire."
+        },
+        "item_id": {
+          "name": "ID del capo",
+          "description": "L'ID Wardrowbe del capo."
+        }
+      }
+    },
+    "archive_item": {
+      "name": "Archivia capo",
+      "description": "Archivia un capo.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "L'account Wardrowbe (voce di configurazione) su cui agire."
+        },
+        "item_id": {
+          "name": "ID del capo",
+          "description": "L'ID Wardrowbe del capo."
+        },
+        "reason": {
+          "name": "Motivo",
+          "description": "Perché il capo viene archiviato, ad es. donato o consumato."
+        }
+      }
+    },
+    "restore_item": {
+      "name": "Ripristina capo",
+      "description": "Ripristina un capo archiviato in precedenza.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "L'account Wardrowbe (voce di configurazione) su cui agire."
+        },
+        "item_id": {
+          "name": "ID del capo",
+          "description": "L'ID Wardrowbe del capo."
+        }
+      }
+    },
+    "test_notification": {
+      "name": "Notifica di test",
+      "description": "Invia una notifica di test tramite un'impostazione configurata.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "L'account Wardrowbe (voce di configurazione) su cui agire."
+        },
+        "setting_id": {
+          "name": "ID impostazione di notifica",
+          "description": "L'impostazione di notifica Wardrowbe da usare per il test."
+        }
+      }
+    },
+    "get_summary": {
+      "name": "Ottieni riepilogo",
+      "description": "Restituisce le ultime analisi, gli outfit, i capi da lavare e le notifiche.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "L'account Wardrowbe (voce di configurazione) su cui agire."
+        },
+        "exclude_statuses": {
+          "name": "Stati da escludere",
+          "description": "Esclude gli outfit con questi stati (pending, sent, accepted, rejected o skipped)."
+        },
+        "include_statuses": {
+          "name": "Stati da includere",
+          "description": "Restituisce solo gli outfit con questi stati (pending, sent, accepted, rejected o skipped)."
+        }
+      }
+    }
+  }
+}
