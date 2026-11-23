@@ -1,4 +1,4 @@
-"""Tests for coordinator-backed button and binary_sensor entities."""
+"""Tests for coordinator-backed entities."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ async def test_sent_outfit_is_actionable(
     dev_mode_entry: MockConfigEntry,
     mock_client: AsyncMock,
 ) -> None:
-    """``sent`` (notified, unanswered) counts as pending for every surface."""
+    """``sent`` (notified, unanswered) counts as a pending outfit."""
     mock_client.async_recent_outfits = AsyncMock(
         return_value=[{"id": "o1", "status": "sent"}]
     )
@@ -33,9 +33,26 @@ async def test_sent_outfit_is_actionable(
 
     assert hass.states.get(_entity_id("binary_sensor", "has_pending_outfit")).state == STATE_ON
 
-    button = _entity_id("button", "accept_latest_outfit")
-    assert hass.states.get(button).state != "unavailable"
-    await hass.services.async_call(
-        "button", "press", {"entity_id": button}, blocking=True
+
+async def test_setup_removes_legacy_button_entities(
+    hass: HomeAssistant,
+    dev_mode_entry: MockConfigEntry,
+    mock_client: AsyncMock,
+) -> None:
+    """Button entities from before the platform was removed are cleaned up."""
+    dev_mode_entry.add_to_hass(hass)
+    registry = er.async_get(hass)
+    legacy = registry.async_get_or_create(
+        "button",
+        "wardrowbe",
+        f"{dev_mode_entry.entry_id}_accept_latest_outfit",
+        config_entry=dev_mode_entry,
     )
-    mock_client.async_outfit_action.assert_awaited_once_with("o1", "accept")
+
+    assert await hass.config_entries.async_setup(dev_mode_entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert registry.async_get(legacy.entity_id) is None
+    assert registry.async_get_entity_id(
+        "binary_sensor", "wardrowbe", f"{dev_mode_entry.entry_id}_has_pending_outfit"
+    )
