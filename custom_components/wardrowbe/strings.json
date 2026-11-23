@@ -184,6 +184,10 @@
       "name": "Suggest outfit",
       "description": "Generate a new outfit recommendation."
     },
+    "create_outfit_suggestion": {
+      "name": "Create outfit suggestion",
+      "description": "Save an outfit you chose (by item IDs) as a pending suggestion. Works even when Wardrowbe's internal AI is disabled."
+    },
     "accept_outfit": {
       "name": "Accept outfit",
       "description": "Mark an outfit recommendation as accepted."

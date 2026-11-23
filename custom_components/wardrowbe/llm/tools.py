@@ -9,6 +9,7 @@ from homeassistant.helpers import llm
 
 from .outfit_tools import (
     AcceptLatestOutfitTool,
+    CreateOutfitSuggestionTool,
     GetLatestOutfitTool,
     GetRecentOutfitsTool,
     RejectLatestOutfitTool,
@@ -18,6 +19,7 @@ from .outfit_tools import (
 from .wardrobe_tools import (
     GetItemsToWashTool,
     GetMostWornItemsTool,
+    GetWardrobeItemsTool,
     GetWardrobeSummaryTool,
     LogWashTool,
 )
@@ -34,12 +36,14 @@ def _factory(cls: type) -> ToolFactory:
 
 TOOL_FACTORIES: list[ToolFactory] = [
     _factory(SuggestOutfitTool),
+    _factory(CreateOutfitSuggestionTool),
     _factory(GetLatestOutfitTool),
     _factory(GetRecentOutfitsTool),
     _factory(AcceptLatestOutfitTool),
     _factory(RejectLatestOutfitTool),
     _factory(SkipLatestOutfitTool),
     _factory(GetWardrobeSummaryTool),
+    _factory(GetWardrobeItemsTool),
     _factory(GetMostWornItemsTool),
     _factory(GetItemsToWashTool),
     _factory(LogWashTool),

@@ -33,6 +33,7 @@ from .const import (
     API_NOTIFICATIONS_HISTORY,
     API_NOTIFICATIONS_SETTINGS,
     API_OUTFIT_SUGGEST,
+    API_OUTFIT_SUGGESTIONS,
     API_OUTFITS,
     DEFAULT_TIMEOUT,
 )
@@ -253,10 +254,38 @@ class WardrowbeClient:
         _resolve_image_urls(items, self._host, self._entry_id)
         return items
 
+    async def async_list_items(
+        self,
+        *,
+        item_type: str | None = None,
+        search: str | None = None,
+        include_needs_wash: bool = False,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """Active (non-archived) items; clean ones only unless asked otherwise."""
+        params: dict[str, Any] = {"is_archived": "false", "page_size": limit}
+        if not include_needs_wash:
+            params["needs_wash"] = "false"
+        if item_type:
+            params["type"] = item_type
+        if search:
+            params["search"] = search
+        items = _coerce_list(await self._request("GET", API_ITEMS, params=params))
+        _resolve_image_urls(items, self._host, self._entry_id)
+        return items
+
     # ---- authenticated writes ----
 
     async def async_suggest_outfit(self, payload: dict[str, Any]) -> dict[str, Any]:
         result = await self._request("POST", API_OUTFIT_SUGGEST, json=payload)
+        if isinstance(result, dict):
+            _resolve_image_urls(result, self._host, self._entry_id)
+        return result
+
+    async def async_create_outfit_suggestion(
+        self, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        result = await self._request("POST", API_OUTFIT_SUGGESTIONS, json=payload)
         if isinstance(result, dict):
             _resolve_image_urls(result, self._host, self._entry_id)
         return result

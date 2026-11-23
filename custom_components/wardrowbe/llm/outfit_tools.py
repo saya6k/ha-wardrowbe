@@ -34,7 +34,10 @@ class SuggestOutfitTool(BaseWardrowbeTool):
         "to today), and free-text notes (e.g. 'it's raining', 'meeting a "
         "client'). Produces a pending outfit; follow up with "
         "wardrowbe__accept_latest_outfit, wardrowbe__reject_latest_outfit, or "
-        "wardrowbe__skip_latest_outfit once the user reacts to it."
+        "wardrowbe__skip_latest_outfit once the user reacts to it. If it "
+        "reports that Wardrowbe's internal AI is disabled, compose the outfit "
+        "yourself with wardrowbe__get_wardrobe_items and "
+        "wardrowbe__create_outfit_suggestion instead."
     )
     parameters = vol.Schema(
         {
@@ -62,6 +65,13 @@ class SuggestOutfitTool(BaseWardrowbeTool):
         try:
             outfit = await runtime.client.async_suggest_outfit(payload)
         except WardrowbeApiError as err:
+            if err.status == 503:
+                return self.error(
+                    "Wardrowbe's internal AI is disabled, so it cannot generate "
+                    "suggestions. Compose the outfit yourself: call "
+                    "wardrowbe__get_wardrobe_items, pick a coherent set of items, "
+                    "then call wardrowbe__create_outfit_suggestion."
+                )
             return self.error(f"suggest_outfit failed: {err}")
         await runtime.coordinator.async_request_refresh()
 
@@ -75,6 +85,70 @@ class SuggestOutfitTool(BaseWardrowbeTool):
                 "An outfit suggestion has been rendered as image cards. "
                 "Tell the user what you suggested in 1-2 short sentences "
                 "naming the key pieces; do not list URLs."
+            ),
+        )
+
+
+class CreateOutfitSuggestionTool(BaseWardrowbeTool):
+    name = "wardrowbe__create_outfit_suggestion"
+    title = "Create outfit suggestion"
+    annotations = llm.ToolAnnotations(
+        read_only=False, destructive=False, idempotent=False, open_world=True
+    )
+    description = (
+        "Save an outfit you composed yourself as a pending suggestion in "
+        "Wardrowbe. Works even when Wardrowbe's internal AI is disabled. First "
+        "get item ids from wardrowbe__get_wardrobe_items, then pass 1-20 "
+        "item_ids (typically top, bottom, shoes, optional outer layer and "
+        "accessories) and an occasion. Optional: name, reasoning (why these "
+        "pieces work together), notes, scheduled_for (YYYY-MM-DD, defaults to "
+        "today). Follow up with wardrowbe__accept_latest_outfit, "
+        "wardrowbe__reject_latest_outfit, or wardrowbe__skip_latest_outfit once "
+        "the user reacts to it."
+    )
+    parameters = vol.Schema(
+        {
+            vol.Required("item_ids"): vol.All([str], vol.Length(min=1, max=20)),
+            vol.Required("occasion"): vol.In(VALID_OCCASIONS),
+            vol.Optional("name"): str,
+            vol.Optional("reasoning"): str,
+            vol.Optional("notes"): str,
+            vol.Optional("scheduled_for"): str,
+        }
+    )
+
+    async def async_call(
+        self,
+        hass: HomeAssistant,
+        tool_input: llm.ToolInput,
+        llm_context: llm.LLMContext,
+    ) -> llm.ToolResult:
+        runtime = self.runtime
+        if runtime is None:
+            return self.error("Wardrowbe is not loaded.")
+        args = tool_input.tool_args
+        payload: dict[str, Any] = {
+            "items": args["item_ids"],
+            "occasion": args["occasion"],
+        }
+        for key in ("name", "reasoning", "notes", "scheduled_for"):
+            if args.get(key) is not None:
+                payload[key] = args[key]
+        try:
+            outfit = await runtime.client.async_create_outfit_suggestion(payload)
+        except WardrowbeApiError as err:
+            return self.error(f"create_outfit_suggestion failed: {err}")
+        await runtime.coordinator.async_request_refresh()
+
+        outfit_dict = outfit if isinstance(outfit, dict) else {}
+        return self.envelope(
+            outfit=outfit_dict,
+            results=outfit_to_results(outfit_dict, self.host),
+            auto_display=True,
+            instruction=(
+                "The outfit was saved as a pending suggestion and rendered as "
+                "image cards. Tell the user what you put together in 1-2 short "
+                "sentences; do not list URLs."
             ),
         )
 

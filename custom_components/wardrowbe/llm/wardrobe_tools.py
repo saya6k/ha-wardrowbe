@@ -139,6 +139,72 @@ class GetMostWornItemsTool(BaseWardrowbeTool):
         )
 
 
+# Enough for the model to pick a coherent outfit without the full item payload.
+_ITEM_FIELDS: tuple[str, ...] = (
+    "id",
+    "name",
+    "type",
+    "subtype",
+    "primary_color",
+    "colors",
+    "pattern",
+    "material",
+    "style",
+    "formality",
+    "season",
+    "favorite",
+    "wear_count",
+    "last_worn_at",
+)
+
+
+class GetWardrobeItemsTool(BaseWardrowbeTool):
+    name = "wardrowbe__get_wardrobe_items"
+    title = "Get wardrobe items"
+    annotations = llm.ToolAnnotations(
+        read_only=True, destructive=False, idempotent=True, open_world=False
+    )
+    description = (
+        "List the user's clean, non-archived wardrobe items with their ids and "
+        "tags (type, colors, style, formality, season, wear history). Call this "
+        "to compose an outfit yourself before wardrowbe__create_outfit_suggestion, "
+        "or when the user asks what clothes they have. Optional filters: type "
+        "(e.g. shirt, pants, shoes), search (free text), limit (1-100, default 60)."
+    )
+    parameters = vol.Schema(
+        {
+            vol.Optional("type"): str,
+            vol.Optional("search"): str,
+            vol.Optional("limit"): vol.All(int, vol.Range(min=1, max=100)),
+        }
+    )
+
+    async def async_call(
+        self,
+        hass: HomeAssistant,
+        tool_input: llm.ToolInput,
+        llm_context: llm.LLMContext,
+    ) -> llm.ToolResult:
+        runtime = self.runtime
+        if runtime is None:
+            return self.error("Wardrowbe is not loaded.")
+        args = tool_input.tool_args
+        try:
+            items = await runtime.client.async_list_items(
+                item_type=args.get("type"),
+                search=args.get("search"),
+                limit=args.get("limit") or 60,
+            )
+        except WardrowbeApiError as err:
+            return self.error(f"get_wardrobe_items failed: {err}")
+        compact = [
+            {key: item[key] for key in _ITEM_FIELDS if item.get(key) not in (None, [], "")}
+            for item in items
+            if isinstance(item, dict)
+        ]
+        return self.envelope(count=len(compact), items=compact)
+
+
 class GetItemsToWashTool(BaseWardrowbeTool):
     name = "wardrowbe__get_items_to_wash"
     title = "Get items to wash"
