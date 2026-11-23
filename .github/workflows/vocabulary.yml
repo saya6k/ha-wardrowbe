@@ -1,0 +1,23 @@
+name: Vocabulary drift
+
+# const.py mirrors upstream Wardrowbe's garment vocabulary (occasions, colors,
+# seasons, formality) because upstream exposes no API for it. This weekly run
+# fails when upstream changes it, so the mirror gets updated.
+# yamllint disable-line rule:truthy
+on:
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Compare with upstream
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check vocabulary
+        run: python3 scripts/check_vocabulary.py
