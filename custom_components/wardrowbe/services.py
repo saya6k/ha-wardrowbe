@@ -31,11 +31,15 @@ from .const import (
     ATTR_EXCLUDE_STATUSES,
     ATTR_INCLUDE_STATUSES,
     ATTR_ITEM_ID,
+    ATTR_ITEM_IDS,
+    ATTR_NAME,
     ATTR_NOTES,
     ATTR_OCCASION,
     ATTR_OUTFIT_ID,
     ATTR_RATING,
     ATTR_REASON,
+    ATTR_REASONING,
+    ATTR_SCHEDULED_FOR,
     ATTR_SETTING_ID,
     ATTR_TARGET_DATE,
     ATTR_TIME_OF_DAY,
@@ -46,6 +50,7 @@ from .const import (
     EVENT_GROUP_WEAR,
     SERVICE_ACCEPT_OUTFIT,
     SERVICE_ARCHIVE_ITEM,
+    SERVICE_CREATE_OUTFIT_SUGGESTION,
     SERVICE_GET_SUMMARY,
     SERVICE_LOG_WASH,
     SERVICE_LOG_WEAR,
@@ -74,6 +79,19 @@ SCHEMA_SUGGEST = _BASE_SCHEMA.extend(
         vol.Optional(ATTR_OCCASION): vol.In(VALID_OCCASIONS),
         vol.Optional(ATTR_TIME_OF_DAY): vol.In(VALID_TIME_OF_DAY),
         vol.Optional(ATTR_TARGET_DATE): cv.date,
+        vol.Optional(ATTR_NOTES): cv.string,
+    }
+)
+
+SCHEMA_CREATE_SUGGESTION = _BASE_SCHEMA.extend(
+    {
+        vol.Required(ATTR_ITEM_IDS): vol.All(
+            cv.ensure_list, [cv.string], vol.Length(min=1, max=20)
+        ),
+        vol.Required(ATTR_OCCASION): vol.In(VALID_OCCASIONS),
+        vol.Optional(ATTR_NAME): cv.string,
+        vol.Optional(ATTR_SCHEDULED_FOR): cv.date,
+        vol.Optional(ATTR_REASONING): cv.string,
         vol.Optional(ATTR_NOTES): cv.string,
     }
 )
@@ -129,6 +147,13 @@ async def async_register_services(hass: HomeAssistant) -> None:
         SERVICE_SUGGEST_OUTFIT,
         _guard(_make_suggest_handler(hass)),
         schema=SCHEMA_SUGGEST,
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_CREATE_OUTFIT_SUGGESTION,
+        _guard(_make_create_suggestion_handler(hass)),
+        schema=SCHEMA_CREATE_SUGGESTION,
         supports_response=SupportsResponse.OPTIONAL,
     )
     hass.services.async_register(
@@ -192,6 +217,7 @@ async def async_register_services(hass: HomeAssistant) -> None:
 async def async_unregister_services(hass: HomeAssistant) -> None:
     for service in (
         SERVICE_SUGGEST_OUTFIT,
+        SERVICE_CREATE_OUTFIT_SUGGESTION,
         SERVICE_ACCEPT_OUTFIT,
         SERVICE_REJECT_OUTFIT,
         SERVICE_SKIP_OUTFIT,
@@ -320,6 +346,28 @@ def _make_suggest_handler(hass: HomeAssistant) -> _ServiceHandler:
             if err.status == 503:
                 raise ServiceValidationError(_AI_DISABLED_MSG) from err
             raise HomeAssistantError(f"suggest_outfit failed: {err}") from err
+        await coordinator.async_request_refresh()
+        return result
+
+    return _handle
+
+
+def _make_create_suggestion_handler(hass: HomeAssistant) -> _ServiceHandler:
+    async def _handle(call: ServiceCall) -> ServiceResponse:
+        client, coordinator = _resolve_runtime(hass, call)
+        payload: dict[str, Any] = {
+            "items": call.data[ATTR_ITEM_IDS],
+            "occasion": call.data[ATTR_OCCASION],
+        }
+        if (scheduled := call.data.get(ATTR_SCHEDULED_FOR)) is not None:
+            payload["scheduled_for"] = scheduled.isoformat()
+        for attr in (ATTR_NAME, ATTR_REASONING, ATTR_NOTES):
+            if (value := call.data.get(attr)) is not None:
+                payload[attr] = value
+        try:
+            result = await client.async_create_outfit_suggestion(payload)
+        except WardrowbeApiError as err:
+            raise HomeAssistantError(f"create_outfit_suggestion failed: {err}") from err
         await coordinator.async_request_refresh()
         return result
 

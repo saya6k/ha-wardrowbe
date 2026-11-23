@@ -184,6 +184,10 @@
       "name": "옷차림 추천",
       "description": "새로운 옷차림을 추천받습니다."
     },
+    "create_outfit_suggestion": {
+      "name": "옷차림 추천 만들기",
+      "description": "직접 고른 아이템(ID)으로 옷차림을 만들어 대기 중인 추천으로 저장합니다. Wardrowbe 내장 AI가 꺼져 있어도 동작합니다."
+    },
     "accept_outfit": {
       "name": "옷차림 수락",
       "description": "추천받은 옷차림을 수락 처리합니다."

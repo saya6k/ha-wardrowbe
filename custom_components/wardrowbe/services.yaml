@@ -57,6 +57,64 @@ suggest_outfit:
         text:
           multiline: true
 
+create_outfit_suggestion:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: wardrowbe
+    item_ids:
+      required: true
+      selector:
+        text:
+          multiple: true
+    occasion:
+      required: true
+      example: casual
+      selector:
+        select:
+          translation_key: common_occasions
+          mode: dropdown
+          custom_value: false
+          options:
+            - beach
+            - brunch
+            - business-casual
+            - casual
+            - date
+            - dinner
+            - formal
+            - gym
+            - hiking
+            - interview
+            - lounge
+            - office
+            - outdoor
+            - party
+            - running
+            - smart-casual
+            - sport
+            - sporty
+            - travel
+            - wedding
+            - weekend
+            - work
+    name:
+      selector:
+        text:
+    scheduled_for:
+      selector:
+        date:
+    reasoning:
+      selector:
+        text:
+          multiline: true
+    notes:
+      selector:
+        text:
+          multiline: true
+
 accept_outfit:
   fields:
     config_entry_id:

@@ -139,6 +139,100 @@ class GetMostWornItemsTool(BaseWardrowbeTool):
         )
 
 
+# Enough for the model to pick a coherent outfit without the full item payload.
+_ITEM_FIELDS: tuple[str, ...] = (
+    "id",
+    "name",
+    "type",
+    "subtype",
+    "primary_color",
+    "colors",
+    "pattern",
+    "material",
+    "style",
+    "formality",
+    "season",
+    "favorite",
+    "wear_count",
+    "last_worn_at",
+)
+
+
+class GetWardrobeItemsTool(BaseWardrowbeTool):
+    name = "wardrowbe__get_wardrobe_items"
+    title = "Get wardrobe items"
+    annotations = llm.ToolAnnotations(
+        read_only=True, destructive=False, idempotent=True, open_world=False
+    )
+    description = (
+        "List the user's clean, non-archived wardrobe items with their ids and "
+        "tags (type, colors, style, formality, season, wear history). Call this "
+        "to compose an outfit yourself before wardrowbe__create_outfit_suggestion, "
+        "or when the user asks what clothes they have. Optional filters: type "
+        "(e.g. shirt, pants, shoes), search (free text), limit (1-100, default 60). "
+        "Set auto_display true only when the user asked to see their clothes; "
+        "leave it false when you are just picking items for an outfit."
+    )
+    parameters = vol.Schema(
+        {
+            vol.Optional("type"): str,
+            vol.Optional("search"): str,
+            vol.Optional("limit"): vol.All(int, vol.Range(min=1, max=100)),
+            vol.Optional("auto_display"): bool,
+        }
+    )
+
+    async def async_call(
+        self,
+        hass: HomeAssistant,
+        tool_input: llm.ToolInput,
+        llm_context: llm.LLMContext,
+    ) -> llm.ToolResult:
+        runtime = self.runtime
+        if runtime is None:
+            return self.error("Wardrowbe is not loaded.")
+        args = tool_input.tool_args
+        try:
+            items = await runtime.client.async_list_items(
+                item_type=args.get("type"),
+                search=args.get("search"),
+                limit=args.get("limit") or 60,
+            )
+        except WardrowbeApiError as err:
+            return self.error(f"get_wardrobe_items failed: {err}")
+        items = [item for item in items if isinstance(item, dict)]
+        compact = [
+            {key: item[key] for key in _ITEM_FIELDS if item.get(key) not in (None, [], "")}
+            for item in items
+        ]
+        if not args.get("auto_display"):
+            # Intermediate lookup for outfit composition: no gallery, so the
+            # satellite card only shows the outfit that gets created from it.
+            return self.envelope(count=len(compact), items=compact)
+        results: list[dict[str, Any]] = []
+        for item in items:
+            if img := extract_image_url(item, self.host):
+                title = item.get("name") or item.get("type") or "Item"
+                results.append(
+                    {
+                        "image_url": img,
+                        "thumbnail_url": img,
+                        "title": str(title),
+                        "item_id": str(item.get("id")),
+                    }
+                )
+        return self.envelope(
+            count=len(compact),
+            items=compact,
+            results=results,
+            auto_display=True,
+            instruction=(
+                "The items are shown as an image gallery. Say how many there "
+                "are in one short sentence; do not list them or their URLs."
+            ),
+        )
+
+
 class GetItemsToWashTool(BaseWardrowbeTool):
     name = "wardrowbe__get_items_to_wash"
     title = "Get items to wash"

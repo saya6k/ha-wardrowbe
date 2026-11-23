@@ -112,12 +112,14 @@ async def test_hook_returns_tool_set_for_loaded_entry_none_after_unload(
     assert result is not None
     assert {tool.name for tool in result.tools} == {
         "wardrowbe__suggest_outfit",
+        "wardrowbe__create_outfit_suggestion",
         "wardrowbe__get_latest_outfit",
         "wardrowbe__get_recent_outfits",
         "wardrowbe__accept_latest_outfit",
         "wardrowbe__reject_latest_outfit",
         "wardrowbe__skip_latest_outfit",
         "wardrowbe__get_wardrobe_summary",
+        "wardrowbe__get_wardrobe_items",
         "wardrowbe__get_most_worn_items",
         "wardrowbe__get_items_to_wash",
         "wardrowbe__log_wash",
@@ -145,9 +147,9 @@ async def test_api_instance_end_to_end(
         hass, _api_id(dev_mode_entry.entry_id), _llm_context()
     )
 
-    # 10 wardrowbe tools + HA core's own built-in GetDateTimeTool, which
+    # 12 wardrowbe tools + HA core's own built-in GetDateTimeTool, which
     # async_get_api injects into every API instance.
-    assert len(instance.tools) == 11
+    assert len(instance.tools) == 13
     assert "wardrobe" in instance.api_prompt.lower()
 
 
@@ -245,3 +247,99 @@ async def test_outfit_action_tool_acts_on_sent_outfit(hass: HomeAssistant) -> No
         )
     assert not result.error
     client.async_outfit_action.assert_awaited_once_with("o1", "accept")
+
+
+def _tool_runtime(**client_methods: AsyncMock) -> object:
+    from types import SimpleNamespace
+
+    return SimpleNamespace(
+        client=SimpleNamespace(**client_methods),
+        coordinator=SimpleNamespace(data=None, async_request_refresh=AsyncMock()),
+    )
+
+
+async def _call_tool(hass: HomeAssistant, cls: type, runtime: object, args: dict) -> object:
+    from unittest.mock import PropertyMock, patch
+
+    tool = cls(hass, "test-entry")
+    with patch.object(cls, "runtime", new_callable=PropertyMock) as prop:
+        prop.return_value = runtime
+        return await tool.async_call(
+            hass, ha_llm.ToolInput(tool_name=tool.name, tool_args=args), _llm_context()
+        )
+
+
+@requires_llm_integration
+async def test_suggest_tool_503_points_to_external_authoring(hass: HomeAssistant) -> None:
+    from custom_components.wardrowbe.llm.outfit_tools import SuggestOutfitTool
+
+    runtime = _tool_runtime(
+        async_suggest_outfit=AsyncMock(side_effect=WardrowbeApiError("off", status=503))
+    )
+    result = await _call_tool(hass, SuggestOutfitTool, runtime, {})
+    assert result.error
+    assert "wardrowbe__create_outfit_suggestion" in result.data["error"]
+
+
+@requires_llm_integration
+async def test_get_wardrobe_items_tool_compacts_items(hass: HomeAssistant) -> None:
+    from custom_components.wardrowbe.llm.wardrobe_tools import GetWardrobeItemsTool
+
+    list_items = AsyncMock(
+        return_value=[
+            {
+                "id": "i1",
+                "type": "shirt",
+                "colors": ["navy"],
+                "style": [],
+                "image_path": "/files/i1.jpg",
+                "ai_raw_response": {"big": "blob"},
+            }
+        ]
+    )
+    result = await _call_tool(
+        hass, GetWardrobeItemsTool, _tool_runtime(async_list_items=list_items), {"type": "shirt"}
+    )
+    assert not result.error
+    assert result.data["items"] == [{"id": "i1", "type": "shirt", "colors": ["navy"]}]
+    list_items.assert_awaited_once_with(item_type="shirt", search=None, limit=60)
+
+
+@requires_llm_integration
+async def test_create_outfit_suggestion_tool(hass: HomeAssistant) -> None:
+    from custom_components.wardrowbe.llm.outfit_tools import CreateOutfitSuggestionTool
+
+    create = AsyncMock(return_value={"id": "o1", "status": "pending", "items": []})
+    runtime = _tool_runtime(async_create_outfit_suggestion=create)
+    result = await _call_tool(
+        hass,
+        CreateOutfitSuggestionTool,
+        runtime,
+        {"item_ids": ["i1", "i2"], "occasion": "casual", "reasoning": "Easy weekend look"},
+    )
+    assert not result.error
+    assert result.data["outfit"]["id"] == "o1"
+    create.assert_awaited_once_with(
+        {"items": ["i1", "i2"], "occasion": "casual", "reasoning": "Easy weekend look"}
+    )
+    runtime.coordinator.async_request_refresh.assert_awaited_once()
+
+
+@requires_llm_integration
+async def test_get_wardrobe_items_tool_gallery_on_request(hass: HomeAssistant) -> None:
+    from custom_components.wardrowbe.llm.wardrobe_tools import GetWardrobeItemsTool
+
+    list_items = AsyncMock(
+        return_value=[
+            {"id": "i1", "name": "Navy shirt", "image_url": "/api/wardrowbe/image/e/files/i1.jpg"},
+            {"id": "i2", "type": "pants"},
+        ]
+    )
+    runtime = _tool_runtime(async_list_items=list_items)
+    plain = await _call_tool(hass, GetWardrobeItemsTool, runtime, {})
+    assert "results" not in plain.data
+
+    shown = await _call_tool(hass, GetWardrobeItemsTool, runtime, {"auto_display": True})
+    assert shown.data["auto_display"] is True
+    assert [r["item_id"] for r in shown.data["results"]] == ["i1"]
+    assert shown.data["results"][0]["image_url"].endswith("/files/i1.jpg")
