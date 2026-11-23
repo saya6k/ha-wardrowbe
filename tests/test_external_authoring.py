@@ -19,6 +19,7 @@ from custom_components.wardrowbe.api import (
 )
 from custom_components.wardrowbe.const import (
     API_AUTH_SYNC,
+    API_ITEM_TYPES,
     API_ITEMS,
     API_OUTFIT_SUGGESTIONS,
     DOMAIN,
@@ -44,11 +45,17 @@ async def test_client_list_items_and_create_suggestion(
     aioclient_mock.post(
         f"{HOST}{API_OUTFIT_SUGGESTIONS}", json={"id": "o1", "status": "pending"}
     )
+    aioclient_mock.get(f"{HOST}{API_ITEM_TYPES}", json=[{"type": "shirt", "count": 3}])
 
-    items = await client.async_list_items(item_type="shirt", limit=50)
+    items = await client.async_list_items(
+        item_type="shirt", colors=["navy", "black"], favorite=False, limit=50
+    )
     assert [i["id"] for i in items] == ["i1"]
     _, url, _, _ = aioclient_mock.mock_calls[-1]
     assert url.query["type"] == "shirt"
+    assert url.query["colors"] == "navy,black"
+    assert url.query["favorite"] == "false"
+    assert "subtype" not in url.query
     assert url.query["needs_wash"] == "false"
     assert url.query["is_archived"] == "false"
     assert url.query["page_size"] == "50"
@@ -60,6 +67,8 @@ async def test_client_list_items_and_create_suggestion(
     _, url, body, _ = aioclient_mock.mock_calls[-1]
     assert url.path == API_OUTFIT_SUGGESTIONS
     assert body == {"items": ["i1", "i2"], "occasion": "casual"}
+
+    assert await client.async_item_types() == [{"type": "shirt", "count": 3}]
 
 
 async def _setup(hass: HomeAssistant, entry: MockConfigEntry) -> None:
