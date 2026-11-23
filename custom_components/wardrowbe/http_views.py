@@ -72,6 +72,12 @@ class WardrowbeImageProxyView(HomeAssistantView):
                 _LOGGER.warning("Wardrowbe image proxy failed for %s: %s", full_path, err)
                 return web.Response(status=502)
             return web.Response(status=err.status)
-        response = web.Response(body=body, content_type=content_type)
-        response.headers["Cache-Control"] = "private, max-age=3600"
-        return response
+        # Passed as a header, not ``content_type=``: aiohttp rejects that
+        # argument when it carries parameters such as ``; charset=``.
+        return web.Response(
+            body=body,
+            headers={
+                "Content-Type": content_type,
+                "Cache-Control": "private, max-age=3600",
+            },
+        )

@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+from unittest.mock import AsyncMock
+
 import pytest
+from aiohttp.test_utils import make_mocked_request
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
 from custom_components.wardrowbe import api
@@ -13,7 +17,10 @@ from custom_components.wardrowbe.api import (
     WardrowbeApiError,
     WardrowbeClient,
 )
-from custom_components.wardrowbe.http_views import normalize_image_path
+from custom_components.wardrowbe.http_views import (
+    WardrowbeImageProxyView,
+    normalize_image_path,
+)
 
 HOST = "http://wardrowbe.test"
 IMG = "/api/v1/images/items/i1.jpg"
@@ -83,3 +90,28 @@ async def test_fetch_image_timeout_has_no_status(
     with pytest.raises(WardrowbeApiError) as exc:
         await _client(hass).async_fetch_image(IMG, "")
     assert exc.value.status is None
+
+
+@pytest.mark.parametrize(
+    "upstream_type", ["image/jpeg", "image/svg+xml; charset=utf-8"]
+)
+async def test_view_passes_upstream_content_type(
+    hass: HomeAssistant,
+    dev_mode_entry: MockConfigEntry,
+    mock_client: AsyncMock,
+    upstream_type: str,
+) -> None:
+    """A ``; charset=`` parameter must not make aiohttp reject the response."""
+    dev_mode_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(dev_mode_entry.entry_id)
+    await hass.async_block_till_done()
+    mock_client.async_fetch_image.return_value = (b"img", upstream_type)
+
+    view = WardrowbeImageProxyView(hass)
+    request = make_mocked_request("GET", "/api/wardrowbe/image/x?sig=abc")
+    response = await view.get(request, dev_mode_entry.entry_id, IMG.lstrip("/"))
+
+    assert response.status == 200
+    assert response.headers["Content-Type"] == upstream_type
+    assert response.body == b"img"
+    mock_client.async_fetch_image.assert_awaited_with(IMG, "sig=abc")
