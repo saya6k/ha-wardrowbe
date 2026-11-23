@@ -1,11 +1,8 @@
 """Tests for the suggest_outfit AI-capability gating and 503 handling.
 
-`suggest_outfit` is registered wrapped in ``_guard``, which catches
-``ServiceValidationError`` (returning None) but lets ``HomeAssistantError``
-propagate. That asymmetry is the lever these tests use:
-
-* fail-fast / 503-deferred → ServiceValidationError → call returns None
-* any other API error → HomeAssistantError → call raises
+* fail-fast / 503-deferred → ServiceValidationError reaches the caller
+* any other API error → HomeAssistantError
+* a stale config_entry_id is swallowed by ``_guard`` (logged, returns None)
 """
 
 from __future__ import annotations
@@ -15,7 +12,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.wardrowbe.api import WardrowbeApiError
@@ -52,18 +49,11 @@ async def _setup(
     await hass.async_block_till_done()
 
 
-async def _call(hass: HomeAssistant, entry: MockConfigEntry) -> None:
-    """Fire the service without requesting a response.
-
-    ``return_response=True`` makes HA core raise when the handler yields
-    None — which is exactly what ``_guard`` does after swallowing a
-    ServiceValidationError — so the deferred/fail-fast paths must be
-    exercised without it.
-    """
+async def _call(hass: HomeAssistant, entry_id: str) -> None:
     await hass.services.async_call(
         DOMAIN,
         SERVICE_SUGGEST_OUTFIT,
-        {ATTR_CONFIG_ENTRY_ID: entry.entry_id},
+        {ATTR_CONFIG_ENTRY_ID: entry_id},
         blocking=True,
     )
 
@@ -88,25 +78,26 @@ async def test_suggest_fails_fast_when_text_ai_disabled(
     mock_client.async_suggest_outfit = AsyncMock(return_value={"id": "o1"})
     await _setup(hass, dev_mode_entry)
 
-    await _call(hass, dev_mode_entry)
+    with pytest.raises(ServiceValidationError, match="internal AI is disabled"):
+        await _call_with_response(hass, dev_mode_entry)
 
     mock_client.async_suggest_outfit.assert_not_called()
 
 
-async def test_suggest_503_is_deferred_not_error(
+async def test_suggest_503_raises_validation_error(
     hass: HomeAssistant,
     dev_mode_entry: MockConfigEntry,
     mock_client: AsyncMock,
 ) -> None:
-    """A server-side 503 (AI off) maps to ServiceValidationError → swallowed."""
+    """A server-side 503 (AI off) maps to a ServiceValidationError for the caller."""
     mock_client.async_capabilities = AsyncMock(return_value={"ai": {"text": True}})
     mock_client.async_suggest_outfit = AsyncMock(
         side_effect=WardrowbeApiError("deferred", status=503)
     )
     await _setup(hass, dev_mode_entry)
 
-    # Guard swallows the mapped ServiceValidationError → no exception raised.
-    await _call(hass, dev_mode_entry)
+    with pytest.raises(ServiceValidationError, match="internal AI is disabled"):
+        await _call(hass, dev_mode_entry.entry_id)
 
     mock_client.async_suggest_outfit.assert_called_once()
 
@@ -124,7 +115,7 @@ async def test_suggest_non_503_error_propagates(
     await _setup(hass, dev_mode_entry)
 
     with pytest.raises(HomeAssistantError):
-        await _call(hass, dev_mode_entry)
+        await _call(hass, dev_mode_entry.entry_id)
 
 
 async def test_suggest_happy_path_returns_result(
@@ -140,3 +131,16 @@ async def test_suggest_happy_path_returns_result(
 
     assert result == {"id": "o1"}
     mock_client.async_suggest_outfit.assert_called_once()
+
+
+async def test_unknown_entry_is_swallowed(
+    hass: HomeAssistant,
+    dev_mode_entry: MockConfigEntry,
+    mock_client: AsyncMock,
+) -> None:
+    """A stale config_entry_id from an old automation is logged, not raised."""
+    await _setup(hass, dev_mode_entry)
+
+    await _call(hass, "does-not-exist")
+
+    mock_client.async_suggest_outfit.assert_not_called()
