@@ -1,6 +1,6 @@
 # Wardrowbe — Home Assistant 통합
 
-> Home Assistant **2026.10.0.dev202609290227** 이상이 필요합니다.
+> Home Assistant **2026.10.0** 이상이 필요합니다.
 
 셀프호스팅 AI 옷장 관리자 [Wardrowbe](https://github.com/Anyesh/wardrowbe)용 Home Assistant 커스텀 컴포넌트. 옷장 분석, 아웃핏 수명주기, 알림 이력을 sensor·event 엔티티로 노출하고, 아웃핏/착용/세탁 액션을 서비스로 제공합니다.
 
@@ -18,6 +18,7 @@
 |---|---|
 | `sensor` | `total_items`, `items_ready`, `items_processing`, `items_archived`, `total_outfits`, `outfits_this_week`, `outfits_this_month`, `acceptance_rate`, `average_rating`, `total_wears`, `most_worn_item`, `top_color`, `last_outfit_status`, `notifications_last_24h` |
 | `binary_sensor` | `api_healthy`, `has_pending_outfit` |
+| `todo` | `to_wash` (세탁이 필요한 아이템; 완료 처리하면 세탁이 기록됨) |
 | `event` | `outfit` (suggested / accepted / rejected / skipped / feedback_submitted), `notification` (sent / failed), `wear` (logged), `wash` (logged) |
 
 ### 서비스
@@ -43,7 +44,7 @@
 
 ### HACS (권장)
 
-1. HACS → Integrations → Custom repositories에서 `https://github.com/saya6k/ha_wardrowbe`를 **Integration** 타입으로 추가.
+1. HACS → Integrations → Custom repositories에서 `https://github.com/saya6k/ha-wardrowbe`를 **Integration** 타입으로 추가.
 2. HACS에서 **Wardrowbe** 설치.
 3. Home Assistant 재시작.
 4. **설정 → 기기 및 서비스 → 통합 추가 → Wardrowbe**.
