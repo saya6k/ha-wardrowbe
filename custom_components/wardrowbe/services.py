@@ -291,15 +291,10 @@ def _resolve_client(hass: HomeAssistant, call: ServiceCall) -> WardrowbeClient:
     return _resolve_runtime(hass, call)[0]
 
 
-def _resolve_latest_pending_outfit(hass: HomeAssistant, call: ServiceCall) -> str:
-    entry_id = call.data[ATTR_CONFIG_ENTRY_ID]
-    entry = hass.config_entries.async_get_entry(entry_id)
-    if entry is None:
-        raise _UnknownEntryError(f"Unknown Wardrowbe config entry: {entry_id}")
-    runtime = getattr(entry, "runtime_data", None)
-    if runtime is None or runtime.coordinator.data is None:
+def _resolve_latest_pending_outfit(coordinator: WardrowbeCoordinator) -> str:
+    if coordinator.data is None:
         raise HomeAssistantError("Wardrowbe coordinator has no data yet.")
-    for outfit in runtime.coordinator.data.outfits:
+    for outfit in coordinator.data.outfits:
         if outfit.get("status") in ACTIONABLE_OUTFIT_STATUSES and "id" in outfit:
             return str(outfit["id"])
     raise HomeAssistantError(
@@ -378,7 +373,7 @@ def _make_outfit_action_handler(hass: HomeAssistant, action: str) -> _ServiceHan
     async def _handle(call: ServiceCall) -> None:
         client, coordinator = _resolve_runtime(hass, call)
         outfit_id = call.data.get(ATTR_OUTFIT_ID) or _resolve_latest_pending_outfit(
-            hass, call
+            coordinator
         )
         try:
             await client.async_outfit_action(outfit_id, action)
@@ -471,12 +466,12 @@ def _wash_wear_event_payload(item_id: str, result: Any) -> dict[str, Any]:
 def _make_archive_handler(hass: HomeAssistant) -> _ServiceHandler:
     async def _handle(call: ServiceCall) -> None:
         client, coordinator = _resolve_runtime(hass, call)
+        item_id = call.data[ATTR_ITEM_ID]
         try:
-            await client.async_archive_item(
-                call.data[ATTR_ITEM_ID], call.data.get(ATTR_REASON)
-            )
+            await client.async_archive_item(item_id, call.data.get(ATTR_REASON))
         except WardrowbeApiError as err:
             raise HomeAssistantError(f"archive_item failed: {err}") from err
+        coordinator.suppress_wash_inference(item_id)
         await coordinator.async_request_refresh()
 
     return _handle

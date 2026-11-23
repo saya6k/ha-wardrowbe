@@ -4,6 +4,8 @@ PKCE too, and its secret must still reach the token endpoint on that branch.
 
 from __future__ import annotations
 
+import aiohttp
+import pytest
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
@@ -64,3 +66,33 @@ async def test_pkce_public_client_omits_secret(
 
     sent = aioclient_mock.mock_calls[0][2]
     assert "client_secret" not in sent
+
+
+async def test_pkce_resolve_sends_stored_verifier(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    aioclient_mock.post(TOKEN_URL, json={"access_token": "tok"})
+    impl = _impl(hass, client_secret=None, use_pkce=True)
+    impl._pkce_verifiers["flow1"] = "verifier123"
+
+    await impl.async_resolve_external_data(
+        {"code": "abc", "state": {"flow_id": "flow1", "redirect_uri": "http://ha/cb"}}
+    )
+
+    sent = aioclient_mock.mock_calls[0][2]
+    assert sent["code_verifier"] == "verifier123"
+    assert sent["redirect_uri"] == "http://ha/cb"
+    assert "flow1" not in impl._pkce_verifiers
+
+
+async def test_pkce_missing_verifier_fails_without_token_request(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """After a reload mid-flow; must be a ClientError so HA aborts the flow."""
+    impl = _impl(hass, client_secret=None, use_pkce=True)
+
+    with pytest.raises(aiohttp.ClientError):
+        await impl.async_resolve_external_data(
+            {"code": "abc", "state": {"flow_id": "gone", "redirect_uri": "http://ha/cb"}}
+        )
+    assert not aioclient_mock.mock_calls

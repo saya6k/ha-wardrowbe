@@ -15,16 +15,28 @@ revealing Wardrowbe's own hostname is the whole point.
 from __future__ import annotations
 
 import logging
+import posixpath
 
-from aiohttp import ClientError, web
+from aiohttp import web
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant
 
+from .api import WardrowbeApiError
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
 _ALLOWED_PATH_PREFIX = "/api/v1/images/"
+
+
+def normalize_image_path(path: str) -> str | None:
+    """Return the normalised upstream path, or None if it leaves the images tree."""
+    # The upstream URL gets its dot-segments collapsed, so check the collapsed
+    # form — otherwise ``images/../../x`` would pass a raw prefix check.
+    full_path = posixpath.normpath(f"/{path}")
+    if not full_path.startswith(_ALLOWED_PATH_PREFIX):
+        return None
+    return full_path
 
 
 class WardrowbeImageProxyView(HomeAssistantView):
@@ -47,28 +59,19 @@ class WardrowbeImageProxyView(HomeAssistantView):
         if runtime is None:
             return web.Response(status=503)
 
-        full_path = f"/{path}"
-        if not full_path.startswith(_ALLOWED_PATH_PREFIX):
+        full_path = normalize_image_path(path)
+        if full_path is None:
             return web.Response(status=403)
 
-        client = runtime.client
-        target = f"{client.host}{full_path}"
-        if request.query_string:
-            target = f"{target}?{request.query_string}"
-
         try:
-            async with client._session.get(
-                target, ssl=client._verify_ssl
-            ) as upstream:
-                if upstream.status != 200:
-                    return web.Response(status=upstream.status)
-                body = await upstream.read()
-                content_type = upstream.headers.get(
-                    "Content-Type", "application/octet-stream"
-                )
-                response = web.Response(body=body, content_type=content_type)
-                response.headers["Cache-Control"] = "private, max-age=3600"
-                return response
-        except (ClientError, TimeoutError) as err:
-            _LOGGER.warning("Wardrowbe image proxy failed for %s: %s", target, err)
-            return web.Response(status=502)
+            body, content_type = await runtime.client.async_fetch_image(
+                full_path, request.query_string
+            )
+        except WardrowbeApiError as err:
+            if err.status is None:
+                _LOGGER.warning("Wardrowbe image proxy failed for %s: %s", full_path, err)
+                return web.Response(status=502)
+            return web.Response(status=err.status)
+        response = web.Response(body=body, content_type=content_type)
+        response.headers["Cache-Control"] = "private, max-age=3600"
+        return response
