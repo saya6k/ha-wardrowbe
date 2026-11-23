@@ -79,12 +79,12 @@ VS Code → "Reopen in Container" picks up `.devcontainer/devcontainer.json` and
 
 ### OIDC
 
-You'll need an OIDC client registered with your provider for Home Assistant. Use HA's redirect URL: `https://<your-ha-host>/auth/external/callback`. The integration supports both **confidential clients** (client_id + client_secret) and **public clients** (client_id only — code_challenge/code_verifier handled automatically). PKCE is a separate toggle from having a secret: a public client must use it, but a confidential client can opt into it too if your provider supports PKCE alongside a secret.
+Wardrowbe only accepts sign-ins whose token was issued to **its own** OIDC client (its web client or, if configured, its mobile client), so Home Assistant signs in through that same client rather than a separate one. In your provider, add Home Assistant's redirect URI to that client once: `https://my.home-assistant.io/redirect/oauth` (the default, when the `my` integration is enabled as part of `default_config`) or `https://<your-ha-host>/auth/external/callback` otherwise. The config flow shows the exact URI to use. The integration supports both **confidential clients** (client_id + client_secret) and **public clients** (client_id only — code_challenge/code_verifier handled automatically). PKCE is a separate toggle from having a secret: a public client must use it, but a confidential client can opt into it too if your provider supports PKCE alongside a secret.
 
 In the integration config flow:
 
 1. Enter your Wardrowbe URL (e.g. `https://wardrowbe.example.com`) and pick **OIDC / SSO**.
-2. Enter the **OIDC issuer URL** (auto-suggested from `/api/v1/auth/config` when available), **client ID**, **client secret** if your client has one (leave blank for a public client), and whether to **use PKCE** (on by default; required if the secret is blank). Scopes default to `openid profile email offline_access`.
+2. The **OIDC issuer URL** and **client ID** are filled in from `/api/v1/auth/config` when the server publishes them (it prefers the public mobile client). For a public client just submit; for a confidential client enter its **client secret**. **Use PKCE** is on by default and required if the secret is blank. Scopes default to `openid profile email offline_access`.
 3. Complete the provider's login + consent flow.
 4. The integration exchanges the resulting `id_token` for a Wardrowbe JWT and stores both. Tokens refresh automatically; reauthentication is prompted only if refresh fails.
 
@@ -94,7 +94,7 @@ Pick **Development mode** in step 1 and enter the `external_id` you log in with 
 
 ### Multiple accounts
 
-Run the **Add Integration** flow once per account. Each entry creates its own device, sensors, event entities, and shows up in the `config_entry_id` selector for service calls.
+Run the **Add Integration** flow once per account. Each entry creates its own device, sensors, event entities, and shows up in the `config_entry_id` selector for service calls. Adding another account on a server that's already configured reuses its OIDC client settings and asks the identity provider to show its login screen, so you can sign in as a different user.
 
 ### Reconfiguring
 

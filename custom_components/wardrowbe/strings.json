@@ -12,7 +12,7 @@
       },
       "oidc": {
         "title": "Wardrowbe — OIDC",
-        "description": "Provide the OIDC issuer URL and a client registered for Home Assistant. The integration will discover authorize/token URLs automatically. Leave the client secret blank if your OIDC client is registered as a public client — it must use PKCE in that case. A confidential client (with a secret) can also use PKCE if your provider supports it.",
+        "description": "Wardrowbe only accepts sign-ins through its own OIDC client, so the issuer URL and client ID are filled in from the server when it publishes them. If that client has no secret (such as Wardrowbe's mobile client), leave the secret blank and keep PKCE on; otherwise enter the client's secret. Authorize/token URLs are discovered automatically.\n\nIn your identity provider, add this redirect URI to the client once: `{redirect_uri}`",
         "data": {
           "issuer_url": "OIDC issuer URL",
           "client_id": "Client ID",

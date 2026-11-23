@@ -92,6 +92,9 @@ class WardrowbeConfigFlow(
         self._external_id: str | None = None
         self._reauth_entry: ConfigEntry | None = None
         self._reconfigure_entry: ConfigEntry | None = None
+        # Set when a fresh flow targets a host that already has an entry, i.e.
+        # the user is adding another account on the same Wardrowbe server.
+        self._same_host_entry: ConfigEntry | None = None
 
     @property
     def logger(self) -> logging.Logger:
@@ -99,7 +102,12 @@ class WardrowbeConfigFlow(
 
     @property
     def extra_authorize_data(self) -> dict[str, Any]:
-        return {"scope": self._scopes}
+        data: dict[str, Any] = {"scope": self._scopes}
+        if self._same_host_entry is not None:
+            # Otherwise the IdP silently reuses the browser's session and signs
+            # in as the already-configured account, aborting the flow.
+            data["prompt"] = "login"
+        return data
 
     # --- step: user (entry point) ---
 
@@ -116,6 +124,8 @@ class WardrowbeConfigFlow(
                 self._host = host
                 self._verify_ssl = user_input.get(CONF_VERIFY_SSL, True)
                 self._auth_mode = user_input[CONF_AUTH_MODE]
+                if self._reconfigure_entry is None:
+                    self._prefill_from_same_host(host)
                 if self._auth_mode == AUTH_MODE_DEV:
                     return await self.async_step_dev()
                 return await self.async_step_oidc()
@@ -191,7 +201,12 @@ class WardrowbeConfigFlow(
     ) -> ConfigFlowResult:
         assert self._host is not None
         errors: dict[str, str] = {}
-        suggested_issuer = self._issuer_url or await self._discover_issuer()
+        if self._client_id is None:
+            # Wardrowbe only accepts id_tokens issued to its own client, and
+            # publishes that client (preferring the public mobile one) here.
+            issuer, client_id = await self._discover_auth_config()
+            self._issuer_url = self._issuer_url or issuer
+            self._client_id = client_id
 
         if user_input is not None:
             issuer = user_input[CONF_ISSUER_URL].rstrip("/")
@@ -211,7 +226,11 @@ class WardrowbeConfigFlow(
                 raw_secret = (user_input.get(CONF_CLIENT_SECRET) or "").strip()
                 if raw_secret:
                     self._client_secret = raw_secret
-                elif self._reauth_entry is None and self._reconfigure_entry is None:
+                elif (
+                    self._reauth_entry is None
+                    and self._reconfigure_entry is None
+                    and self._same_host_entry is None
+                ):
                     self._client_secret = None
                 use_pkce = user_input.get(CONF_USE_PKCE, self._use_pkce)
                 self._scopes = user_input.get(CONF_SCOPES) or DEFAULT_OIDC_SCOPES
@@ -245,7 +264,7 @@ class WardrowbeConfigFlow(
 
         schema = vol.Schema(
             {
-                vol.Required(CONF_ISSUER_URL, default=suggested_issuer): TextSelector(
+                vol.Required(CONF_ISSUER_URL, default=self._issuer_url or ""): TextSelector(
                     TextSelectorConfig(type=TextSelectorType.URL)
                 ),
                 vol.Required(CONF_CLIENT_ID, default=self._client_id or ""): str,
@@ -257,8 +276,15 @@ class WardrowbeConfigFlow(
                 vol.Optional(CONF_SCOPES, default=self._scopes): str,
             }
         )
+        try:
+            redirect_uri = config_entry_oauth2_flow.async_get_redirect_uri(self.hass)
+        except RuntimeError:
+            redirect_uri = "<Home Assistant URL>/auth/external/callback"
         return self.async_show_form(
-            step_id="oidc", data_schema=schema, errors=errors
+            step_id="oidc",
+            data_schema=schema,
+            errors=errors,
+            description_placeholders={"redirect_uri": redirect_uri},
         )
 
     async def async_oauth_create_entry(
@@ -391,10 +417,31 @@ class WardrowbeConfigFlow(
 
     # --- helpers ---
 
-    async def _discover_issuer(self) -> str:
-        """Best-effort fetch of issuer URL from Wardrowbe's /auth/config."""
+    def _prefill_from_same_host(self, host: str) -> None:
+        """Reuse an existing entry's OIDC client when adding another account."""
+        self._same_host_entry = next(
+            (
+                entry
+                for entry in self._async_current_entries(include_ignore=False)
+                if entry.data.get(CONF_HOST) == host
+            ),
+            None,
+        )
+        if self._same_host_entry is None:
+            return
+        existing = self._same_host_entry.data
+        if self._auth_mode != AUTH_MODE_OIDC or existing.get(CONF_AUTH_MODE) != AUTH_MODE_OIDC:
+            return
+        self._issuer_url = existing.get(CONF_ISSUER_URL)
+        self._client_id = existing.get(CONF_CLIENT_ID)
+        self._client_secret = existing.get(CONF_CLIENT_SECRET)
+        self._use_pkce = existing.get(CONF_USE_PKCE, not self._client_secret)
+        self._scopes = existing.get(CONF_SCOPES, DEFAULT_OIDC_SCOPES)
+
+    async def _discover_auth_config(self) -> tuple[str | None, str | None]:
+        """Best-effort fetch of the OIDC issuer and client ID from /auth/config."""
         if not self._host:
-            return ""
+            return None, None
         session = async_get_clientsession(self.hass)
         try:
             async with session.get(
@@ -403,15 +450,14 @@ class WardrowbeConfigFlow(
                 timeout=aiohttp.ClientTimeout(total=15),
             ) as resp:
                 if resp.status != 200:
-                    return ""
+                    return None, None
                 cfg = await resp.json()
         except (aiohttp.ClientError, TimeoutError):
-            return ""
+            return None, None
         oidc_block = cfg.get("oidc") if isinstance(cfg.get("oidc"), dict) else {}
         return (
-            oidc_block.get("issuer_url")
-            or cfg.get("issuer_url")
-            or ""
+            oidc_block.get("issuer_url") or cfg.get("issuer_url") or None,
+            oidc_block.get("client_id") or None,
         )
 
     @staticmethod

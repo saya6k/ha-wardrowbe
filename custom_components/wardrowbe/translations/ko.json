@@ -12,7 +12,7 @@
       },
       "oidc": {
         "title": "Wardrowbe — OIDC",
-        "description": "OIDC issuer URL과 Home Assistant용으로 등록된 클라이언트 정보를 입력하세요. 인증/토큰 URL은 자동으로 검색됩니다. PKCE 공개 클라이언트로 등록된 경우 클라이언트 시크릿을 비워두세요.",
+        "description": "Wardrowbe는 자체 OIDC 클라이언트를 통한 로그인만 허용하므로, 서버가 공개한 issuer URL과 클라이언트 ID를 미리 채웁니다. 시크릿이 없는 클라이언트(예: Wardrowbe 모바일 클라이언트)라면 시크릿을 비우고 PKCE를 켜 두세요. 그렇지 않으면 클라이언트 시크릿을 입력하세요. 인증/토큰 URL은 자동으로 검색됩니다.\n\nIdP에서 이 클라이언트의 redirect URI에 다음 주소를 한 번 추가하세요: `{redirect_uri}`",
         "data": {
           "issuer_url": "OIDC issuer URL",
           "client_id": "클라이언트 ID",
