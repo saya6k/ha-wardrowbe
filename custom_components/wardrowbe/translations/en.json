@@ -182,51 +182,227 @@
   "services": {
     "suggest_outfit": {
       "name": "Suggest outfit",
-      "description": "Generate a new outfit recommendation."
+      "description": "Generate a new outfit recommendation.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "The Wardrowbe account (config entry) to act on."
+        },
+        "occasion": {
+          "name": "Occasion",
+          "description": "What the outfit is for, e.g. office, casual or date."
+        },
+        "time_of_day": {
+          "name": "Time of day",
+          "description": "When the outfit will be worn: morning, afternoon, evening, night or full_day."
+        },
+        "target_date": {
+          "name": "Date",
+          "description": "The day to dress for. Defaults to today."
+        },
+        "notes": {
+          "name": "Notes",
+          "description": "Free-text hints, e.g. 'it's raining' or 'meeting a client'."
+        }
+      }
     },
     "create_outfit_suggestion": {
       "name": "Create outfit suggestion",
-      "description": "Save an outfit you chose (by item IDs) as a pending suggestion. Works even when Wardrowbe's internal AI is disabled."
+      "description": "Save an outfit you chose (by item IDs) as a pending suggestion. Works even when Wardrowbe's internal AI is disabled.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "The Wardrowbe account (config entry) to act on."
+        },
+        "item_ids": {
+          "name": "Item IDs",
+          "description": "1 to 20 Wardrowbe item IDs that make up the outfit, e.g. top, bottom and shoes."
+        },
+        "occasion": {
+          "name": "Occasion",
+          "description": "What the outfit is for, e.g. office, casual or date."
+        },
+        "name": {
+          "name": "Name",
+          "description": "Optional name for the outfit."
+        },
+        "scheduled_for": {
+          "name": "Date",
+          "description": "The day the outfit is for. Defaults to today."
+        },
+        "reasoning": {
+          "name": "Reasoning",
+          "description": "Why these pieces work together; shown with the suggestion."
+        },
+        "notes": {
+          "name": "Notes",
+          "description": "Extra notes saved with the outfit."
+        }
+      }
     },
     "accept_outfit": {
       "name": "Accept outfit",
-      "description": "Mark an outfit recommendation as accepted."
+      "description": "Mark an outfit recommendation as accepted.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "The Wardrowbe account (config entry) to act on."
+        },
+        "outfit_id": {
+          "name": "Outfit ID",
+          "description": "The outfit to act on. Leave empty to use the latest pending outfit."
+        }
+      }
     },
     "reject_outfit": {
       "name": "Reject outfit",
-      "description": "Mark an outfit recommendation as rejected."
+      "description": "Mark an outfit recommendation as rejected.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "The Wardrowbe account (config entry) to act on."
+        },
+        "outfit_id": {
+          "name": "Outfit ID",
+          "description": "The outfit to act on. Leave empty to use the latest pending outfit."
+        }
+      }
     },
     "skip_outfit": {
       "name": "Skip outfit",
-      "description": "Mark an outfit recommendation as skipped."
+      "description": "Mark an outfit recommendation as skipped.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "The Wardrowbe account (config entry) to act on."
+        },
+        "outfit_id": {
+          "name": "Outfit ID",
+          "description": "The outfit to act on. Leave empty to use the latest pending outfit."
+        }
+      }
     },
     "submit_feedback": {
       "name": "Submit outfit feedback",
-      "description": "Submit a rating and optional notes for an outfit."
+      "description": "Submit a rating and optional notes for an outfit.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "The Wardrowbe account (config entry) to act on."
+        },
+        "outfit_id": {
+          "name": "Outfit ID",
+          "description": "The outfit to give feedback on."
+        },
+        "rating": {
+          "name": "Rating",
+          "description": "Rating from 1 (worst) to 5 (best)."
+        },
+        "wore": {
+          "name": "Wore it",
+          "description": "Whether the outfit was actually worn."
+        },
+        "notes": {
+          "name": "Notes",
+          "description": "Free-text feedback."
+        }
+      }
     },
     "log_wear": {
       "name": "Log wear",
-      "description": "Record a wear event for an item."
+      "description": "Record a wear event for an item.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "The Wardrowbe account (config entry) to act on."
+        },
+        "item_id": {
+          "name": "Item ID",
+          "description": "The Wardrowbe ID of the clothing item."
+        },
+        "date": {
+          "name": "Date",
+          "description": "The day it was worn. Defaults to today."
+        }
+      }
     },
     "log_wash": {
       "name": "Log wash",
-      "description": "Record a wash event for an item."
+      "description": "Record a wash event for an item.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "The Wardrowbe account (config entry) to act on."
+        },
+        "item_id": {
+          "name": "Item ID",
+          "description": "The Wardrowbe ID of the clothing item."
+        }
+      }
     },
     "archive_item": {
       "name": "Archive item",
-      "description": "Archive an item."
+      "description": "Archive an item.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "The Wardrowbe account (config entry) to act on."
+        },
+        "item_id": {
+          "name": "Item ID",
+          "description": "The Wardrowbe ID of the clothing item."
+        },
+        "reason": {
+          "name": "Reason",
+          "description": "Why the item is archived, e.g. donated or worn out."
+        }
+      }
     },
     "restore_item": {
       "name": "Restore item",
-      "description": "Restore a previously archived item."
+      "description": "Restore a previously archived item.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "The Wardrowbe account (config entry) to act on."
+        },
+        "item_id": {
+          "name": "Item ID",
+          "description": "The Wardrowbe ID of the clothing item."
+        }
+      }
     },
     "test_notification": {
       "name": "Test notification",
-      "description": "Send a test notification through a configured setting."
+      "description": "Send a test notification through a configured setting.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "The Wardrowbe account (config entry) to act on."
+        },
+        "setting_id": {
+          "name": "Notification setting ID",
+          "description": "The Wardrowbe notification setting to send the test through."
+        }
+      }
     },
     "get_summary": {
       "name": "Get summary",
-      "description": "Return the latest analytics, outfits, items needing wash, and notifications."
+      "description": "Return the latest analytics, outfits, items needing wash, and notifications.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "The Wardrowbe account (config entry) to act on."
+        },
+        "exclude_statuses": {
+          "name": "Exclude statuses",
+          "description": "Leave out outfits with these statuses (pending, sent, accepted, rejected or skipped)."
+        },
+        "include_statuses": {
+          "name": "Include statuses",
+          "description": "Only return outfits with these statuses (pending, sent, accepted, rejected or skipped)."
+        }
+      }
     }
   }
 }

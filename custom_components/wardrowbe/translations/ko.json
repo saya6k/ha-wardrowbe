@@ -182,51 +182,227 @@
   "services": {
     "suggest_outfit": {
       "name": "옷차림 추천",
-      "description": "새로운 옷차림을 추천받습니다."
+      "description": "새로운 옷차림을 추천받습니다.",
+      "fields": {
+        "config_entry_id": {
+          "name": "계정",
+          "description": "작업할 Wardrowbe 계정(통합 항목)입니다."
+        },
+        "occasion": {
+          "name": "상황",
+          "description": "옷차림의 용도입니다. 예: office, casual, date."
+        },
+        "time_of_day": {
+          "name": "시간대",
+          "description": "옷을 입을 시간대입니다: morning, afternoon, evening, night, full_day."
+        },
+        "target_date": {
+          "name": "날짜",
+          "description": "옷을 입을 날입니다. 기본값은 오늘입니다."
+        },
+        "notes": {
+          "name": "메모",
+          "description": "자유 형식 힌트입니다. 예: '비가 와요', '고객 미팅이 있어요'."
+        }
+      }
     },
     "create_outfit_suggestion": {
       "name": "옷차림 추천 만들기",
-      "description": "직접 고른 아이템(ID)으로 옷차림을 만들어 대기 중인 추천으로 저장합니다. Wardrowbe 내장 AI가 꺼져 있어도 동작합니다."
+      "description": "직접 고른 아이템(ID)으로 옷차림을 만들어 대기 중인 추천으로 저장합니다. Wardrowbe 내장 AI가 꺼져 있어도 동작합니다.",
+      "fields": {
+        "config_entry_id": {
+          "name": "계정",
+          "description": "작업할 Wardrowbe 계정(통합 항목)입니다."
+        },
+        "item_ids": {
+          "name": "아이템 ID",
+          "description": "옷차림을 이루는 Wardrowbe 아이템 ID 1~20개입니다. 예: 상의, 하의, 신발."
+        },
+        "occasion": {
+          "name": "상황",
+          "description": "옷차림의 용도입니다. 예: office, casual, date."
+        },
+        "name": {
+          "name": "이름",
+          "description": "옷차림의 이름입니다(선택)."
+        },
+        "scheduled_for": {
+          "name": "날짜",
+          "description": "옷차림을 입을 날입니다. 기본값은 오늘입니다."
+        },
+        "reasoning": {
+          "name": "이유",
+          "description": "이 아이템들이 어울리는 이유입니다. 추천과 함께 표시됩니다."
+        },
+        "notes": {
+          "name": "메모",
+          "description": "옷차림과 함께 저장할 메모입니다."
+        }
+      }
     },
     "accept_outfit": {
       "name": "옷차림 수락",
-      "description": "추천받은 옷차림을 수락 처리합니다."
+      "description": "추천받은 옷차림을 수락 처리합니다.",
+      "fields": {
+        "config_entry_id": {
+          "name": "계정",
+          "description": "작업할 Wardrowbe 계정(통합 항목)입니다."
+        },
+        "outfit_id": {
+          "name": "옷차림 ID",
+          "description": "대상 옷차림입니다. 비워 두면 가장 최근의 대기 중인 옷차림에 적용합니다."
+        }
+      }
     },
     "reject_outfit": {
       "name": "옷차림 거절",
-      "description": "추천받은 옷차림을 거절 처리합니다."
+      "description": "추천받은 옷차림을 거절 처리합니다.",
+      "fields": {
+        "config_entry_id": {
+          "name": "계정",
+          "description": "작업할 Wardrowbe 계정(통합 항목)입니다."
+        },
+        "outfit_id": {
+          "name": "옷차림 ID",
+          "description": "대상 옷차림입니다. 비워 두면 가장 최근의 대기 중인 옷차림에 적용합니다."
+        }
+      }
     },
     "skip_outfit": {
       "name": "옷차림 건너뛰기",
-      "description": "추천받은 옷차림을 건너뛰기 처리합니다."
+      "description": "추천받은 옷차림을 건너뛰기 처리합니다.",
+      "fields": {
+        "config_entry_id": {
+          "name": "계정",
+          "description": "작업할 Wardrowbe 계정(통합 항목)입니다."
+        },
+        "outfit_id": {
+          "name": "옷차림 ID",
+          "description": "대상 옷차림입니다. 비워 두면 가장 최근의 대기 중인 옷차림에 적용합니다."
+        }
+      }
     },
     "submit_feedback": {
       "name": "옷차림 피드백 제출",
-      "description": "옷차림에 평점과 메모를 남깁니다."
+      "description": "옷차림에 평점과 메모를 남깁니다.",
+      "fields": {
+        "config_entry_id": {
+          "name": "계정",
+          "description": "작업할 Wardrowbe 계정(통합 항목)입니다."
+        },
+        "outfit_id": {
+          "name": "옷차림 ID",
+          "description": "피드백을 남길 옷차림입니다."
+        },
+        "rating": {
+          "name": "평점",
+          "description": "1(최저)부터 5(최고)까지의 평점입니다."
+        },
+        "wore": {
+          "name": "입었음",
+          "description": "실제로 이 옷차림을 입었는지 여부입니다."
+        },
+        "notes": {
+          "name": "메모",
+          "description": "자유 형식 피드백입니다."
+        }
+      }
     },
     "log_wear": {
       "name": "착용 기록",
-      "description": "아이템 착용 내역을 기록합니다."
+      "description": "아이템 착용 내역을 기록합니다.",
+      "fields": {
+        "config_entry_id": {
+          "name": "계정",
+          "description": "작업할 Wardrowbe 계정(통합 항목)입니다."
+        },
+        "item_id": {
+          "name": "아이템 ID",
+          "description": "옷 아이템의 Wardrowbe ID입니다."
+        },
+        "date": {
+          "name": "날짜",
+          "description": "입은 날입니다. 기본값은 오늘입니다."
+        }
+      }
     },
     "log_wash": {
       "name": "세탁 기록",
-      "description": "아이템 세탁 내역을 기록합니다."
+      "description": "아이템 세탁 내역을 기록합니다.",
+      "fields": {
+        "config_entry_id": {
+          "name": "계정",
+          "description": "작업할 Wardrowbe 계정(통합 항목)입니다."
+        },
+        "item_id": {
+          "name": "아이템 ID",
+          "description": "옷 아이템의 Wardrowbe ID입니다."
+        }
+      }
     },
     "archive_item": {
       "name": "아이템 보관",
-      "description": "아이템을 보관 처리합니다."
+      "description": "아이템을 보관 처리합니다.",
+      "fields": {
+        "config_entry_id": {
+          "name": "계정",
+          "description": "작업할 Wardrowbe 계정(통합 항목)입니다."
+        },
+        "item_id": {
+          "name": "아이템 ID",
+          "description": "옷 아이템의 Wardrowbe ID입니다."
+        },
+        "reason": {
+          "name": "사유",
+          "description": "보관 처리하는 이유입니다. 예: 기부, 낡음."
+        }
+      }
     },
     "restore_item": {
       "name": "아이템 복원",
-      "description": "보관된 아이템을 복원합니다."
+      "description": "보관된 아이템을 복원합니다.",
+      "fields": {
+        "config_entry_id": {
+          "name": "계정",
+          "description": "작업할 Wardrowbe 계정(통합 항목)입니다."
+        },
+        "item_id": {
+          "name": "아이템 ID",
+          "description": "옷 아이템의 Wardrowbe ID입니다."
+        }
+      }
     },
     "test_notification": {
       "name": "알림 테스트",
-      "description": "설정된 알림 채널로 테스트 알림을 보냅니다."
+      "description": "설정된 알림 채널로 테스트 알림을 보냅니다.",
+      "fields": {
+        "config_entry_id": {
+          "name": "계정",
+          "description": "작업할 Wardrowbe 계정(통합 항목)입니다."
+        },
+        "setting_id": {
+          "name": "알림 설정 ID",
+          "description": "테스트 알림을 보낼 Wardrowbe 알림 설정입니다."
+        }
+      }
     },
     "get_summary": {
       "name": "요약 가져오기",
-      "description": "최신 옷장 통계, 코디, 세탁 필요 아이템, 알림 정보를 한 번에 반환합니다."
+      "description": "최신 옷장 통계, 코디, 세탁 필요 아이템, 알림 정보를 한 번에 반환합니다.",
+      "fields": {
+        "config_entry_id": {
+          "name": "계정",
+          "description": "작업할 Wardrowbe 계정(통합 항목)입니다."
+        },
+        "exclude_statuses": {
+          "name": "제외할 상태",
+          "description": "이 상태의 옷차림을 뺍니다 (pending, sent, accepted, rejected or skipped)."
+        },
+        "include_statuses": {
+          "name": "포함할 상태",
+          "description": "이 상태의 옷차림만 돌려줍니다 (pending, sent, accepted, rejected or skipped)."
+        }
+      }
     }
   }
 }
