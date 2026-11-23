@@ -9,6 +9,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import (
@@ -46,7 +47,6 @@ PLATFORMS: list[Platform] = [
     Platform.SENSOR,
     Platform.BINARY_SENSOR,
     Platform.EVENT,
-    Platform.BUTTON,
     Platform.TODO,
 ]
 
@@ -113,6 +113,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: WardrowbeConfigEntry) ->
         raise ConfigEntryNotReady(str(err)) from err
 
     entry.runtime_data = WardrowbeRuntime(coordinator=coordinator, client=client)
+
+    # The button platform was removed; drop its now-orphaned registry entries.
+    ent_reg = er.async_get(hass)
+    for ent in er.async_entries_for_config_entry(ent_reg, entry.entry_id):
+        if ent.domain == Platform.BUTTON:
+            ent_reg.async_remove(ent.entity_id)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     await async_register_services(hass)

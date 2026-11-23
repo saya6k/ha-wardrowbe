@@ -175,11 +175,6 @@
       "wear": { "name": "Wear logged" },
       "wash": { "name": "Wash logged" }
     },
-    "button": {
-      "accept_latest_outfit": { "name": "Accept latest outfit" },
-      "skip_latest_outfit": { "name": "Skip latest outfit" },
-      "reject_latest_outfit": { "name": "Reject latest outfit" }
-    },
     "todo": {
       "to_wash": { "name": "Items to wash" }
     }

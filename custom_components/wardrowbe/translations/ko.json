@@ -175,11 +175,6 @@
       "wear": { "name": "착용 기록" },
       "wash": { "name": "세탁 기록" }
     },
-    "button": {
-      "accept_latest_outfit": { "name": "최근 추천 수락" },
-      "skip_latest_outfit": { "name": "최근 추천 건너뛰기" },
-      "reject_latest_outfit": { "name": "최근 추천 거절" }
-    },
     "todo": {
       "to_wash": { "name": "세탁할 아이템" }
     }
