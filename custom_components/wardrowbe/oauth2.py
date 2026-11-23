@@ -28,7 +28,12 @@ from homeassistant.helpers import config_entry_oauth2_flow
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from yarl import URL
 
-from .api import TokenProvider, WardrowbeAuthError, build_oidc_sync_payload
+from .api import (
+    TokenProvider,
+    WardrowbeApiError,
+    WardrowbeAuthError,
+    build_oidc_sync_payload,
+)
 from .const import DEFAULT_OIDC_SCOPES
 
 _LOGGER = logging.getLogger(__name__)
@@ -226,7 +231,16 @@ class OIDCTokenProvider(TokenProvider):
         )
 
     async def async_get_sync_payload(self) -> dict[str, Any]:
-        await self._oauth_session.async_ensure_token_valid()
+        try:
+            await self._oauth_session.async_ensure_token_valid()
+        except aiohttp.ClientResponseError as err:
+            # A 4xx (e.g. invalid_grant) means the refresh token is dead;
+            # 429/5xx are provider outages that should just retry later.
+            if 400 <= err.status < 500 and err.status != 429:
+                raise WardrowbeAuthError(f"OIDC token refresh rejected: {err}") from err
+            raise WardrowbeApiError(f"OIDC token refresh failed: {err}") from err
+        except (aiohttp.ClientError, TimeoutError) as err:
+            raise WardrowbeApiError(f"OIDC token refresh failed: {err}") from err
         token = self._oauth_session.token or {}
         id_token = token.get("id_token")
         if not id_token:
