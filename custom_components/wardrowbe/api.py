@@ -260,7 +260,6 @@ class WardrowbeClient:
         *,
         item_type: str | None = None,
         subtype: str | None = None,
-        colors: list[str] | None = None,
         favorite: bool | None = None,
         search: str | None = None,
         include_needs_wash: bool = False,
@@ -274,8 +273,6 @@ class WardrowbeClient:
             params["type"] = item_type
         if subtype:
             params["subtype"] = subtype
-        if colors:
-            params["colors"] = ",".join(colors)  # server matches any of them
         if favorite is not None:
             params["favorite"] = "true" if favorite else "false"
         if search:

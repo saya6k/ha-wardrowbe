@@ -204,16 +204,18 @@ class GetWardrobeItemsTool(BaseWardrowbeTool):
         limit = args.get("limit") or 60
         season = (args.get("season") or "").casefold()
         formality = (args.get("formality") or "").casefold()
+        colors = {c.casefold() for c in args.get("colors") or []}
+        local_filter = bool(season or formality or colors)
         try:
             items = await runtime.client.async_list_items(
                 item_type=args.get("type"),
                 subtype=args.get("subtype"),
-                colors=args.get("colors"),
                 favorite=args.get("favorite"),
                 search=args.get("search"),
-                # Season/formality have no server-side filter: fetch the
-                # maximum page, filter here, then apply the limit.
-                limit=100 if season or formality else limit,
+                # Season/formality have no server-side filter, and the server's
+                # color filter ignores primary_color: fetch the maximum page,
+                # filter here, then apply the limit.
+                limit=100 if local_filter else limit,
             )
             types = await runtime.client.async_item_types()
         except WardrowbeApiError as err:
@@ -222,6 +224,7 @@ class GetWardrobeItemsTool(BaseWardrowbeTool):
             item
             for item in items
             if isinstance(item, dict)
+            and (not colors or _matches_colors(item, colors))
             and (not season or _matches_season(item, season))
             and (not formality or str(item.get("formality") or "").casefold() == formality)
         ][:limit]
@@ -263,6 +266,15 @@ class GetWardrobeItemsTool(BaseWardrowbeTool):
                 "are in one short sentence; do not list them or their URLs."
             ),
         )
+
+
+def _matches_colors(item: dict[str, Any], wanted: set[str]) -> bool:
+    # Wardrowbe's colors list and primary_color can disagree (e.g. primary
+    # "navy", colors ["blue"]), so match either.
+    have = {str(c).casefold() for c in item.get("colors") or []}
+    if item.get("primary_color"):
+        have.add(str(item["primary_color"]).casefold())
+    return not wanted.isdisjoint(have)
 
 
 def _matches_season(item: dict[str, Any], season: str) -> bool:

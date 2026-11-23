@@ -48,12 +48,11 @@ async def test_client_list_items_and_create_suggestion(
     aioclient_mock.get(f"{HOST}{API_ITEM_TYPES}", json=[{"type": "shirt", "count": 3}])
 
     items = await client.async_list_items(
-        item_type="shirt", colors=["navy", "black"], favorite=False, limit=50
+        item_type="shirt", favorite=False, limit=50
     )
     assert [i["id"] for i in items] == ["i1"]
     _, url, _, _ = aioclient_mock.mock_calls[-1]
     assert url.query["type"] == "shirt"
-    assert url.query["colors"] == "navy,black"
     assert url.query["favorite"] == "false"
     assert "subtype" not in url.query
     assert url.query["needs_wash"] == "false"
