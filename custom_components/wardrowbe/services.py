@@ -207,13 +207,17 @@ async def async_unregister_services(hass: HomeAssistant) -> None:
             hass.services.async_remove(DOMAIN, service)
 
 
+class _UnknownEntryError(ServiceValidationError):
+    """The call's config_entry_id doesn't name an existing Wardrowbe entry."""
+
+
 def _resolve_runtime(
     hass: HomeAssistant, call: ServiceCall
 ) -> tuple[WardrowbeClient, WardrowbeCoordinator]:
     entry_id = call.data[ATTR_CONFIG_ENTRY_ID]
     entry: ConfigEntry | None = hass.config_entries.async_get_entry(entry_id)
     if entry is None or entry.domain != DOMAIN:
-        raise ServiceValidationError(f"Unknown Wardrowbe config entry: {entry_id}")
+        raise _UnknownEntryError(f"Unknown Wardrowbe config entry: {entry_id}")
     runtime = getattr(entry, "runtime_data", None)
     if runtime is None:
         raise HomeAssistantError(
@@ -228,23 +232,24 @@ _ServiceHandler = Callable[[ServiceCall], Coroutine[Any, Any, ServiceResponse | 
 
 
 def _guard(handler: _ServiceHandler) -> _ServiceHandler:
-    """Wrap a service handler to prevent ServiceValidationError from reaching aiohttp.
+    """Wrap a service handler so a stale config_entry_id doesn't flood the log.
 
     When a config entry is removed while automations/scripts still reference it,
-    ``_resolve_runtime`` raises ``ServiceValidationError``.  Without this guard
+    ``_resolve_runtime`` raises ``_UnknownEntryError``.  Without this guard
     that error reaches aiohttp's top-level handler and is logged at ERROR level
     on every service call — potentially hundreds of times.  Catching it here
     keeps it at WARNING and returns ``None`` so HA can respond gracefully.
 
     Only the first occurrence per error message is logged at WARNING; subsequent
     repeats are logged at DEBUG so the user still sees the root cause without
-    the log being flooded.
+    the log being flooded. Other ``ServiceValidationError``s (e.g. AI disabled)
+    are real user-facing errors and propagate to the caller.
     """
 
     async def _wrapped(call: ServiceCall) -> ServiceResponse | None:
         try:
             return await handler(call)
-        except ServiceValidationError as err:
+        except _UnknownEntryError as err:
             msg = str(err)
             if msg in _warned:
                 _LOGGER.debug("Service call skipped (repeat): %s", msg)
@@ -264,7 +269,7 @@ def _resolve_latest_pending_outfit(hass: HomeAssistant, call: ServiceCall) -> st
     entry_id = call.data[ATTR_CONFIG_ENTRY_ID]
     entry = hass.config_entries.async_get_entry(entry_id)
     if entry is None:
-        raise ServiceValidationError(f"Unknown Wardrowbe config entry: {entry_id}")
+        raise _UnknownEntryError(f"Unknown Wardrowbe config entry: {entry_id}")
     runtime = getattr(entry, "runtime_data", None)
     if runtime is None or runtime.coordinator.data is None:
         raise HomeAssistantError("Wardrowbe coordinator has no data yet.")
