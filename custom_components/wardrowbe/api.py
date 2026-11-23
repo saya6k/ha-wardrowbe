@@ -310,8 +310,8 @@ class WardrowbeClient:
                 return self._jwt
             try:
                 payload = await self._token_provider.async_get_sync_payload()
-            except aiohttp.ClientError as err:
-                raise WardrowbeAuthError(f"Failed to refresh auth token: {err}") from err
+            except (aiohttp.ClientError, TimeoutError) as err:
+                raise WardrowbeApiError(f"Failed to refresh auth token: {err}") from err
             try:
                 async with self._session.post(
                     self._url(API_AUTH_SYNC),
@@ -320,9 +320,16 @@ class WardrowbeClient:
                     timeout=aiohttp.ClientTimeout(total=DEFAULT_TIMEOUT),
                 ) as resp:
                     body_text = await resp.text()
+                    # 5xx/429 are outages, not bad credentials — don't force reauth.
+                    if resp.status >= 500 or resp.status == 429:
+                        raise WardrowbeApiError(
+                            f"/auth/sync failed: {resp.status} {body_text}",
+                            status=resp.status,
+                        )
                     if resp.status >= 400:
                         raise WardrowbeAuthError(
-                            f"/auth/sync failed: {resp.status} {body_text}"
+                            f"/auth/sync failed: {resp.status} {body_text}",
+                            status=resp.status,
                         )
                     body = await resp.json(content_type=None)
             except aiohttp.ClientError as err:
