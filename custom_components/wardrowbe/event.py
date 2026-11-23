@@ -20,7 +20,7 @@ from .const import (
     EVENT_TYPES_WASH,
     EVENT_TYPES_WEAR,
 )
-from .coordinator import WardrowbeCoordinator
+from .coordinator import PendingEvent, WardrowbeCoordinator
 from .entity import WardrowbeEntity
 
 
@@ -85,11 +85,15 @@ class WardrowbeEvent(WardrowbeEntity, EventEntity):
         super().__init__(coordinator, description.key)
         self.entity_description = description
         self._attr_event_types = list(description.event_types)
+        # The coordinator re-notifies listeners with unchanged data (e.g. after
+        # a failed refresh), so only fire a pending_events batch once.
+        self._last_batch: list[PendingEvent] | None = None
 
     @callback
     def _handle_coordinator_update(self) -> None:
         data = self.coordinator.data
-        if data is not None:
+        if data is not None and data.pending_events is not self._last_batch:
+            self._last_batch = data.pending_events
             for ev in data.pending_events:
                 if ev.group == self.entity_description.group:
                     self._trigger_event(
