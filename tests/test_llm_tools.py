@@ -323,3 +323,23 @@ async def test_create_outfit_suggestion_tool(hass: HomeAssistant) -> None:
         {"items": ["i1", "i2"], "occasion": "casual", "reasoning": "Easy weekend look"}
     )
     runtime.coordinator.async_request_refresh.assert_awaited_once()
+
+
+@requires_llm_integration
+async def test_get_wardrobe_items_tool_gallery_on_request(hass: HomeAssistant) -> None:
+    from custom_components.wardrowbe.llm.wardrobe_tools import GetWardrobeItemsTool
+
+    list_items = AsyncMock(
+        return_value=[
+            {"id": "i1", "name": "Navy shirt", "image_url": "/api/wardrowbe/image/e/files/i1.jpg"},
+            {"id": "i2", "type": "pants"},
+        ]
+    )
+    runtime = _tool_runtime(async_list_items=list_items)
+    plain = await _call_tool(hass, GetWardrobeItemsTool, runtime, {})
+    assert "results" not in plain.data
+
+    shown = await _call_tool(hass, GetWardrobeItemsTool, runtime, {"auto_display": True})
+    assert shown.data["auto_display"] is True
+    assert [r["item_id"] for r in shown.data["results"]] == ["i1"]
+    assert shown.data["results"][0]["image_url"].endswith("/files/i1.jpg")

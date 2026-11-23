@@ -169,13 +169,16 @@ class GetWardrobeItemsTool(BaseWardrowbeTool):
         "tags (type, colors, style, formality, season, wear history). Call this "
         "to compose an outfit yourself before wardrowbe__create_outfit_suggestion, "
         "or when the user asks what clothes they have. Optional filters: type "
-        "(e.g. shirt, pants, shoes), search (free text), limit (1-100, default 60)."
+        "(e.g. shirt, pants, shoes), search (free text), limit (1-100, default 60). "
+        "Set auto_display true only when the user asked to see their clothes; "
+        "leave it false when you are just picking items for an outfit."
     )
     parameters = vol.Schema(
         {
             vol.Optional("type"): str,
             vol.Optional("search"): str,
             vol.Optional("limit"): vol.All(int, vol.Range(min=1, max=100)),
+            vol.Optional("auto_display"): bool,
         }
     )
 
@@ -197,12 +200,37 @@ class GetWardrobeItemsTool(BaseWardrowbeTool):
             )
         except WardrowbeApiError as err:
             return self.error(f"get_wardrobe_items failed: {err}")
+        items = [item for item in items if isinstance(item, dict)]
         compact = [
             {key: item[key] for key in _ITEM_FIELDS if item.get(key) not in (None, [], "")}
             for item in items
-            if isinstance(item, dict)
         ]
-        return self.envelope(count=len(compact), items=compact)
+        if not args.get("auto_display"):
+            # Intermediate lookup for outfit composition: no gallery, so the
+            # satellite card only shows the outfit that gets created from it.
+            return self.envelope(count=len(compact), items=compact)
+        results: list[dict[str, Any]] = []
+        for item in items:
+            if img := extract_image_url(item, self.host):
+                title = item.get("name") or item.get("type") or "Item"
+                results.append(
+                    {
+                        "image_url": img,
+                        "thumbnail_url": img,
+                        "title": str(title),
+                        "item_id": str(item.get("id")),
+                    }
+                )
+        return self.envelope(
+            count=len(compact),
+            items=compact,
+            results=results,
+            auto_display=True,
+            instruction=(
+                "The items are shown as an image gallery. Say how many there "
+                "are in one short sentence; do not list them or their URLs."
+            ),
+        )
 
 
 class GetItemsToWashTool(BaseWardrowbeTool):
