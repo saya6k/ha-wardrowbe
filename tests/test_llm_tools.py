@@ -221,3 +221,27 @@ async def test_no_outfit_is_successful_empty_result(hass: HomeAssistant) -> None
     assert not result.error
     assert result.data["outfit"] is None
     assert result.data["results"] == []
+
+
+@requires_llm_integration
+async def test_outfit_action_tool_acts_on_sent_outfit(hass: HomeAssistant) -> None:
+    """A ``sent`` outfit (notified but not answered) is still actionable."""
+    from types import SimpleNamespace
+    from unittest.mock import PropertyMock, patch
+
+    from custom_components.wardrowbe.llm.outfit_tools import AcceptLatestOutfitTool
+
+    tool = AcceptLatestOutfitTool(hass, "test-entry")
+    client = SimpleNamespace(async_outfit_action=AsyncMock())
+    coordinator = SimpleNamespace(
+        data=SimpleNamespace(outfits=[{"id": "o1", "status": "sent"}]),
+        async_request_refresh=AsyncMock(),
+    )
+    runtime = SimpleNamespace(client=client, coordinator=coordinator)
+    with patch.object(AcceptLatestOutfitTool, "runtime", new_callable=PropertyMock) as prop:
+        prop.return_value = runtime
+        result = await tool.async_call(
+            hass, ha_llm.ToolInput(tool_name=tool.name, tool_args={}), _llm_context()
+        )
+    assert not result.error
+    client.async_outfit_action.assert_awaited_once_with("o1", "accept")

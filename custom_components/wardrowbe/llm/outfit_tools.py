@@ -9,7 +9,11 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 
 from custom_components.wardrowbe.api import WardrowbeApiError
-from custom_components.wardrowbe.const import VALID_OCCASIONS, VALID_TIME_OF_DAY
+from custom_components.wardrowbe.const import (
+    ACTIONABLE_OUTFIT_STATUSES,
+    VALID_OCCASIONS,
+    VALID_TIME_OF_DAY,
+)
 
 from .base_tool import BaseWardrowbeTool
 from .render import extract_image_url, outfit_to_results
@@ -152,10 +156,14 @@ class GetRecentOutfitsTool(BaseWardrowbeTool):
         status_filter = tool_input.tool_args.get("status")
         limit = tool_input.tool_args.get("limit") or 6
         outfits = runtime.coordinator.data.outfits
+        # "sent" is just "pending" after the server notified the user.
+        wanted = (
+            ACTIONABLE_OUTFIT_STATUSES if status_filter == "pending" else (status_filter,)
+        )
         filtered = [
             outfit
             for outfit in outfits
-            if status_filter is None or outfit.get("status") == status_filter
+            if status_filter is None or outfit.get("status") in wanted
         ][:limit]
         results: list[dict[str, Any]] = []
         for outfit in filtered:
@@ -210,7 +218,7 @@ class _OutfitActionTool(BaseWardrowbeTool):
         outfit_id: str | None = None
         target: dict[str, Any] | None = None
         for outfit in runtime.coordinator.data.outfits:
-            if outfit.get("status") == "pending" and outfit.get("id") is not None:
+            if outfit.get("status") in ACTIONABLE_OUTFIT_STATUSES and outfit.get("id") is not None:
                 outfit_id = str(outfit.get("id"))
                 target = outfit
                 break

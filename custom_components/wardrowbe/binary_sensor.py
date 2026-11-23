@@ -15,6 +15,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import WardrowbeConfigEntry
+from .const import ACTIONABLE_OUTFIT_STATUSES
 from .coordinator import WardrowbeData
 from .entity import WardrowbeEntity
 
@@ -36,7 +37,7 @@ BINARY_SENSORS: tuple[WardrowbeBinarySensorDescription, ...] = (
         translation_key="has_pending_outfit",
         icon="mdi:hanger",
         value_fn=lambda d: any(
-            (o.get("status") == "pending") for o in d.outfits
+            (o.get("status") in ACTIONABLE_OUTFIT_STATUSES) for o in d.outfits
         ),
     ),
 )
