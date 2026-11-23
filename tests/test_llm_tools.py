@@ -297,12 +297,17 @@ async def test_get_wardrobe_items_tool_compacts_items(hass: HomeAssistant) -> No
             }
         ]
     )
-    result = await _call_tool(
-        hass, GetWardrobeItemsTool, _tool_runtime(async_list_items=list_items), {"type": "shirt"}
+    runtime = _tool_runtime(
+        async_list_items=list_items,
+        async_item_types=AsyncMock(return_value=[{"type": "shirt", "count": 3}]),
     )
+    result = await _call_tool(hass, GetWardrobeItemsTool, runtime, {"type": "shirt"})
     assert not result.error
     assert result.data["items"] == [{"id": "i1", "type": "shirt", "colors": ["navy"]}]
-    list_items.assert_awaited_once_with(item_type="shirt", search=None, limit=60)
+    assert result.data["available_types"] == [{"type": "shirt", "count": 3}]
+    list_items.assert_awaited_once_with(
+        item_type="shirt", subtype=None, colors=None, favorite=None, search=None, limit=60
+    )
 
 
 @requires_llm_integration
@@ -335,7 +340,9 @@ async def test_get_wardrobe_items_tool_gallery_on_request(hass: HomeAssistant) -
             {"id": "i2", "type": "pants"},
         ]
     )
-    runtime = _tool_runtime(async_list_items=list_items)
+    runtime = _tool_runtime(
+        async_list_items=list_items, async_item_types=AsyncMock(return_value=[])
+    )
     plain = await _call_tool(hass, GetWardrobeItemsTool, runtime, {})
     assert "results" not in plain.data
 
@@ -343,3 +350,43 @@ async def test_get_wardrobe_items_tool_gallery_on_request(hass: HomeAssistant) -
     assert shown.data["auto_display"] is True
     assert [r["item_id"] for r in shown.data["results"]] == ["i1"]
     assert shown.data["results"][0]["image_url"].endswith("/files/i1.jpg")
+
+
+@requires_llm_integration
+async def test_get_wardrobe_items_tool_filters(hass: HomeAssistant) -> None:
+    """Server filters pass through; season/formality filter locally before the limit."""
+    from custom_components.wardrowbe.llm.wardrobe_tools import GetWardrobeItemsTool
+
+    list_items = AsyncMock(
+        return_value=[
+            {"id": "coat", "season": ["winter"], "formality": "formal"},
+            {"id": "tee", "season": ["summer"], "formality": "casual"},
+            {"id": "jeans", "season": ["all-season"], "formality": "Casual"},
+            {"id": "parka", "season": ["Winter", "fall"], "formality": "casual"},
+        ]
+    )
+    runtime = _tool_runtime(
+        async_list_items=list_items, async_item_types=AsyncMock(return_value=[])
+    )
+    result = await _call_tool(
+        hass,
+        GetWardrobeItemsTool,
+        runtime,
+        {
+            "colors": ["navy", "black"],
+            "favorite": True,
+            "subtype": "parka",
+            "season": "winter",
+            "formality": "casual",
+            "limit": 5,
+        },
+    )
+    assert [i["id"] for i in result.data["items"]] == ["jeans", "parka"]
+    list_items.assert_awaited_once_with(
+        item_type=None,
+        subtype="parka",
+        colors=["navy", "black"],
+        favorite=True,
+        search=None,
+        limit=100,
+    )

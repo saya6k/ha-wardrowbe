@@ -168,14 +168,23 @@ class GetWardrobeItemsTool(BaseWardrowbeTool):
         "List the user's clean, non-archived wardrobe items with their ids and "
         "tags (type, colors, style, formality, season, wear history). Call this "
         "to compose an outfit yourself before wardrowbe__create_outfit_suggestion, "
-        "or when the user asks what clothes they have. Optional filters: type "
-        "(e.g. shirt, pants, shoes), search (free text), limit (1-100, default 60). "
-        "Set auto_display true only when the user asked to see their clothes; "
-        "leave it false when you are just picking items for an outfit."
+        "or when the user asks what clothes they have. Optional filters, all "
+        "combinable: type and subtype (exact values; the result's available_types "
+        "lists the user's real types, so retry with one of those if nothing "
+        "matched), colors (list, matches any), favorite, season (e.g. winter; "
+        "all-season items are included), formality (e.g. casual, formal), "
+        "search (free text in name/brand), limit (1-100, default 60). Set "
+        "auto_display true only when the user asked to see their clothes; leave "
+        "it false when you are just picking items for an outfit."
     )
     parameters = vol.Schema(
         {
             vol.Optional("type"): str,
+            vol.Optional("subtype"): str,
+            vol.Optional("colors"): [str],
+            vol.Optional("favorite"): bool,
+            vol.Optional("season"): str,
+            vol.Optional("formality"): str,
             vol.Optional("search"): str,
             vol.Optional("limit"): vol.All(int, vol.Range(min=1, max=100)),
             vol.Optional("auto_display"): bool,
@@ -192,15 +201,35 @@ class GetWardrobeItemsTool(BaseWardrowbeTool):
         if runtime is None:
             return self.error("Wardrowbe is not loaded.")
         args = tool_input.tool_args
+        limit = args.get("limit") or 60
+        season = (args.get("season") or "").casefold()
+        formality = (args.get("formality") or "").casefold()
         try:
             items = await runtime.client.async_list_items(
                 item_type=args.get("type"),
+                subtype=args.get("subtype"),
+                colors=args.get("colors"),
+                favorite=args.get("favorite"),
                 search=args.get("search"),
-                limit=args.get("limit") or 60,
+                # Season/formality have no server-side filter: fetch the
+                # maximum page, filter here, then apply the limit.
+                limit=100 if season or formality else limit,
             )
+            types = await runtime.client.async_item_types()
         except WardrowbeApiError as err:
             return self.error(f"get_wardrobe_items failed: {err}")
-        items = [item for item in items if isinstance(item, dict)]
+        items = [
+            item
+            for item in items
+            if isinstance(item, dict)
+            and (not season or _matches_season(item, season))
+            and (not formality or str(item.get("formality") or "").casefold() == formality)
+        ][:limit]
+        available_types = [
+            {"type": t.get("type"), "count": t.get("count")}
+            for t in types
+            if isinstance(t, dict) and t.get("type")
+        ]
         compact = [
             {key: item[key] for key in _ITEM_FIELDS if item.get(key) not in (None, [], "")}
             for item in items
@@ -208,7 +237,9 @@ class GetWardrobeItemsTool(BaseWardrowbeTool):
         if not args.get("auto_display"):
             # Intermediate lookup for outfit composition: no gallery, so the
             # satellite card only shows the outfit that gets created from it.
-            return self.envelope(count=len(compact), items=compact)
+            return self.envelope(
+                count=len(compact), items=compact, available_types=available_types
+            )
         results: list[dict[str, Any]] = []
         for item in items:
             if img := extract_image_url(item, self.host):
@@ -224,6 +255,7 @@ class GetWardrobeItemsTool(BaseWardrowbeTool):
         return self.envelope(
             count=len(compact),
             items=compact,
+            available_types=available_types,
             results=results,
             auto_display=True,
             instruction=(
@@ -231,6 +263,11 @@ class GetWardrobeItemsTool(BaseWardrowbeTool):
                 "are in one short sentence; do not list them or their URLs."
             ),
         )
+
+
+def _matches_season(item: dict[str, Any], season: str) -> bool:
+    seasons = {str(s).casefold() for s in item.get("season") or []}
+    return season in seasons or "all-season" in seasons
 
 
 class GetItemsToWashTool(BaseWardrowbeTool):

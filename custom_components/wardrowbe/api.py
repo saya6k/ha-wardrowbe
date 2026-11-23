@@ -29,6 +29,7 @@ from .const import (
     API_AUTH_SYNC,
     API_CAPABILITIES,
     API_HEALTH,
+    API_ITEM_TYPES,
     API_ITEMS,
     API_NOTIFICATIONS_HISTORY,
     API_NOTIFICATIONS_SETTINGS,
@@ -254,10 +255,13 @@ class WardrowbeClient:
         _resolve_image_urls(items, self._host, self._entry_id)
         return items
 
-    async def async_list_items(
+    async def async_list_items(  # noqa: PLR0913 — one kwarg per server filter
         self,
         *,
         item_type: str | None = None,
+        subtype: str | None = None,
+        colors: list[str] | None = None,
+        favorite: bool | None = None,
         search: str | None = None,
         include_needs_wash: bool = False,
         limit: int = 100,
@@ -268,11 +272,21 @@ class WardrowbeClient:
             params["needs_wash"] = "false"
         if item_type:
             params["type"] = item_type
+        if subtype:
+            params["subtype"] = subtype
+        if colors:
+            params["colors"] = ",".join(colors)  # server matches any of them
+        if favorite is not None:
+            params["favorite"] = "true" if favorite else "false"
         if search:
             params["search"] = search
         items = _coerce_list(await self._request("GET", API_ITEMS, params=params))
         _resolve_image_urls(items, self._host, self._entry_id)
         return items
+
+    async def async_item_types(self) -> list[dict[str, Any]]:
+        """The user's item types with counts, e.g. [{"type": "shirt", "count": 12}]."""
+        return _coerce_list(await self._request("GET", API_ITEM_TYPES))
 
     # ---- authenticated writes ----
 
