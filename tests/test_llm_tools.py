@@ -306,7 +306,7 @@ async def test_get_wardrobe_items_tool_compacts_items(hass: HomeAssistant) -> No
     assert result.data["items"] == [{"id": "i1", "type": "shirt", "colors": ["navy"]}]
     assert result.data["available_types"] == [{"type": "shirt", "count": 3}]
     list_items.assert_awaited_once_with(
-        item_type="shirt", subtype=None, colors=None, favorite=None, search=None, limit=60
+        item_type="shirt", subtype=None, favorite=None, search=None, limit=60
     )
 
 
@@ -359,10 +359,23 @@ async def test_get_wardrobe_items_tool_filters(hass: HomeAssistant) -> None:
 
     list_items = AsyncMock(
         return_value=[
-            {"id": "coat", "season": ["winter"], "formality": "formal"},
-            {"id": "tee", "season": ["summer"], "formality": "casual"},
-            {"id": "jeans", "season": ["all-season"], "formality": "Casual"},
-            {"id": "parka", "season": ["Winter", "fall"], "formality": "casual"},
+            {"id": "coat", "season": ["winter"], "formality": "formal", "colors": ["navy"]},
+            {"id": "tee", "season": ["summer"], "formality": "casual", "colors": ["navy"]},
+            # primary_color and colors disagree, as seen on real Wardrowbe data
+            {
+                "id": "jeans",
+                "season": ["all-season"],
+                "formality": "Casual",
+                "primary_color": "Navy",
+                "colors": ["blue"],
+            },
+            {
+                "id": "parka",
+                "season": ["Winter", "fall"],
+                "formality": "casual",
+                "colors": ["black"],
+            },
+            {"id": "boots", "season": ["winter"], "formality": "casual", "colors": ["brown"]},
         ]
     )
     runtime = _tool_runtime(
@@ -385,7 +398,6 @@ async def test_get_wardrobe_items_tool_filters(hass: HomeAssistant) -> None:
     list_items.assert_awaited_once_with(
         item_type=None,
         subtype="parka",
-        colors=["navy", "black"],
         favorite=True,
         search=None,
         limit=100,

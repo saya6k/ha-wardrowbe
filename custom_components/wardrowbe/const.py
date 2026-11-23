@@ -151,6 +151,41 @@ VALID_OCCASIONS: Final = (
     "work",
 )
 
+# Canonical item tag values from upstream backend/app/data/garment_vocabulary.json
+# (the server normalises aliases such as "grey" to these on write). Mirrored so
+# LLM tools can name the exact values to filter by.
+ITEM_COLORS: Final = (
+    "beige",
+    "black",
+    "blue",
+    "brown",
+    "burgundy",
+    "cream",
+    "gold",
+    "gray",
+    "green",
+    "light-blue",
+    "navy",
+    "olive",
+    "orange",
+    "pink",
+    "purple",
+    "red",
+    "silver",
+    "tan",
+    "white",
+    "yellow",
+)
+ITEM_SEASONS: Final = ("spring", "summer", "fall", "winter", "all-season")
+ITEM_FORMALITY: Final = (
+    "very-casual",
+    "casual",
+    "smart-casual",
+    "business-casual",
+    "formal",
+    "very-formal",
+)
+
 VALID_TIME_OF_DAY: Final = (
     "morning",
     "afternoon",

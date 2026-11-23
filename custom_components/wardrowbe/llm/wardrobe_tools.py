@@ -9,7 +9,12 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 
 from custom_components.wardrowbe.api import WardrowbeApiError
-from custom_components.wardrowbe.const import EVENT_GROUP_WASH
+from custom_components.wardrowbe.const import (
+    EVENT_GROUP_WASH,
+    ITEM_COLORS,
+    ITEM_FORMALITY,
+    ITEM_SEASONS,
+)
 
 from .base_tool import BaseWardrowbeTool
 from .render import extract_image_url, svg_summary
@@ -171,8 +176,10 @@ class GetWardrobeItemsTool(BaseWardrowbeTool):
         "or when the user asks what clothes they have. Optional filters, all "
         "combinable: type and subtype (exact values; the result's available_types "
         "lists the user's real types, so retry with one of those if nothing "
-        "matched), colors (list, matches any), favorite, season (e.g. winter; "
-        "all-season items are included), formality (e.g. casual, formal), "
+        "matched), colors (list, matches any; use these exact values: "
+        f"{', '.join(ITEM_COLORS)}), favorite, season ({', '.join(ITEM_SEASONS)}; "
+        "all-season items are included), formality (exact, one of "
+        f"{', '.join(ITEM_FORMALITY)}), "
         "search (free text in name/brand), limit (1-100, default 60). Set "
         "auto_display true only when the user asked to see their clothes; leave "
         "it false when you are just picking items for an outfit."
@@ -204,16 +211,18 @@ class GetWardrobeItemsTool(BaseWardrowbeTool):
         limit = args.get("limit") or 60
         season = (args.get("season") or "").casefold()
         formality = (args.get("formality") or "").casefold()
+        colors = {c.casefold() for c in args.get("colors") or []}
+        local_filter = bool(season or formality or colors)
         try:
             items = await runtime.client.async_list_items(
                 item_type=args.get("type"),
                 subtype=args.get("subtype"),
-                colors=args.get("colors"),
                 favorite=args.get("favorite"),
                 search=args.get("search"),
-                # Season/formality have no server-side filter: fetch the
-                # maximum page, filter here, then apply the limit.
-                limit=100 if season or formality else limit,
+                # Season/formality have no server-side filter, and the server's
+                # color filter ignores primary_color: fetch the maximum page,
+                # filter here, then apply the limit.
+                limit=100 if local_filter else limit,
             )
             types = await runtime.client.async_item_types()
         except WardrowbeApiError as err:
@@ -222,6 +231,7 @@ class GetWardrobeItemsTool(BaseWardrowbeTool):
             item
             for item in items
             if isinstance(item, dict)
+            and (not colors or _matches_colors(item, colors))
             and (not season or _matches_season(item, season))
             and (not formality or str(item.get("formality") or "").casefold() == formality)
         ][:limit]
@@ -263,6 +273,15 @@ class GetWardrobeItemsTool(BaseWardrowbeTool):
                 "are in one short sentence; do not list them or their URLs."
             ),
         )
+
+
+def _matches_colors(item: dict[str, Any], wanted: set[str]) -> bool:
+    # Wardrowbe's colors list and primary_color can disagree (e.g. primary
+    # "navy", colors ["blue"]), so match either.
+    have = {str(c).casefold() for c in item.get("colors") or []}
+    if item.get("primary_color"):
+        have.add(str(item["primary_color"]).casefold())
+    return not wanted.isdisjoint(have)
 
 
 def _matches_season(item: dict[str, Any], season: str) -> bool:
