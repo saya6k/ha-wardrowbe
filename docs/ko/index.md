@@ -68,12 +68,12 @@ VS Code → "Reopen in Container"를 선택하면 `.devcontainer/devcontainer.js
 
 ### OIDC
 
-Home Assistant용 OIDC 클라이언트를 프로바이더에 등록해야 합니다. HA의 redirect URL은 `https://<your-ha-host>/auth/external/callback`. 통합은 **confidential client**(client_id + client_secret)와 **public client**(client_id만 — code_challenge/code_verifier 자동 처리) 모두 지원합니다. PKCE는 시크릿 유무와 별개의 토글입니다: public client는 반드시 사용해야 하고, confidential client도 프로바이더가 시크릿과 PKCE를 함께 지원한다면 켤 수 있습니다.
+Wardrowbe는 **자체** OIDC 클라이언트(웹 클라이언트, 또는 설정된 경우 모바일 클라이언트)로 발급된 토큰만 받으므로, Home Assistant도 별도 클라이언트가 아니라 같은 클라이언트로 로그인합니다. 프로바이더에서 그 클라이언트의 redirect URI에 Home Assistant 주소를 한 번 추가하세요: `https://my.home-assistant.io/redirect/oauth`(`default_config`에 포함된 `my` 통합이 켜져 있는 기본 상태) 또는 그 외에는 `https://<your-ha-host>/auth/external/callback`. 설정 화면에 실제로 쓸 URI가 표시됩니다. 통합은 **confidential client**(client_id + client_secret)와 **public client**(client_id만 — code_challenge/code_verifier 자동 처리) 모두 지원합니다. PKCE는 시크릿 유무와 별개의 토글입니다: public client는 반드시 사용해야 하고, confidential client도 프로바이더가 시크릿과 PKCE를 함께 지원한다면 켤 수 있습니다.
 
 통합 config flow에서:
 
 1. Wardrowbe URL(예: `https://wardrowbe.example.com`) 입력 후 **OIDC / SSO** 선택.
-2. **OIDC issuer URL** (가능하면 `/api/v1/auth/config`에서 자동 추천), **client ID**, 클라이언트에 시크릿이 있다면 **client secret** 입력(public client라면 비워두세요), **PKCE 사용 여부** (기본값 켜짐; 시크릿을 비워두면 필수). Scope 기본값은 `openid profile email offline_access`.
+2. 서버가 공개하면 **OIDC issuer URL**과 **client ID**가 `/api/v1/auth/config`에서 자동으로 채워집니다(공개 모바일 클라이언트 우선). public client라면 그대로 제출하고, confidential client라면 **client secret**을 입력하세요. **PKCE 사용**은 기본값 켜짐이며 시크릿을 비워두면 필수입니다. Scope 기본값은 `openid profile email offline_access`.
 3. 프로바이더의 로그인 + consent 플로 완료.
 4. 통합이 받은 `id_token`을 Wardrowbe JWT로 교환하여 둘 다 저장합니다. 토큰은 자동 갱신되며, 갱신 실패 시에만 재인증을 요청합니다.
 

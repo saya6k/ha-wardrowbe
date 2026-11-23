@@ -251,3 +251,30 @@ async def test_oidc_first_account_does_not_force_login(
         },
     )
     assert "prompt" not in URL(url).query
+
+
+@pytest.mark.usefixtures("current_request_with_host")
+async def test_oidc_prefills_client_from_auth_config(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Issuer and client ID come from /auth/config; a public client just submits."""
+    aioclient_mock.get(
+        f"http://wardrowbe.test{API_AUTH_CONFIG}",
+        json={
+            "oidc": {
+                "enabled": True,
+                "issuer_url": "http://issuer.test",
+                "client_id": "wardrowbe-mobile",
+            }
+        },
+    )
+
+    url, defaults = await _oidc_to_authorize_url(hass, None)
+
+    assert defaults[CONF_ISSUER_URL] == "http://issuer.test"
+    assert defaults[CONF_CLIENT_ID] == "wardrowbe-mobile"
+    assert defaults[CONF_USE_PKCE] is True
+    query = URL(url).query
+    assert query["client_id"] == "wardrowbe-mobile"
+    assert "code_challenge" in query
+    assert "prompt" not in query

@@ -201,7 +201,12 @@ class WardrowbeConfigFlow(
     ) -> ConfigFlowResult:
         assert self._host is not None
         errors: dict[str, str] = {}
-        suggested_issuer = self._issuer_url or await self._discover_issuer()
+        if self._client_id is None:
+            # Wardrowbe only accepts id_tokens issued to its own client, and
+            # publishes that client (preferring the public mobile one) here.
+            issuer, client_id = await self._discover_auth_config()
+            self._issuer_url = self._issuer_url or issuer
+            self._client_id = client_id
 
         if user_input is not None:
             issuer = user_input[CONF_ISSUER_URL].rstrip("/")
@@ -259,7 +264,7 @@ class WardrowbeConfigFlow(
 
         schema = vol.Schema(
             {
-                vol.Required(CONF_ISSUER_URL, default=suggested_issuer): TextSelector(
+                vol.Required(CONF_ISSUER_URL, default=self._issuer_url or ""): TextSelector(
                     TextSelectorConfig(type=TextSelectorType.URL)
                 ),
                 vol.Required(CONF_CLIENT_ID, default=self._client_id or ""): str,
@@ -271,8 +276,15 @@ class WardrowbeConfigFlow(
                 vol.Optional(CONF_SCOPES, default=self._scopes): str,
             }
         )
+        try:
+            redirect_uri = config_entry_oauth2_flow.async_get_redirect_uri(self.hass)
+        except RuntimeError:
+            redirect_uri = "<Home Assistant URL>/auth/external/callback"
         return self.async_show_form(
-            step_id="oidc", data_schema=schema, errors=errors
+            step_id="oidc",
+            data_schema=schema,
+            errors=errors,
+            description_placeholders={"redirect_uri": redirect_uri},
         )
 
     async def async_oauth_create_entry(
@@ -426,10 +438,10 @@ class WardrowbeConfigFlow(
         self._use_pkce = existing.get(CONF_USE_PKCE, not self._client_secret)
         self._scopes = existing.get(CONF_SCOPES, DEFAULT_OIDC_SCOPES)
 
-    async def _discover_issuer(self) -> str:
-        """Best-effort fetch of issuer URL from Wardrowbe's /auth/config."""
+    async def _discover_auth_config(self) -> tuple[str | None, str | None]:
+        """Best-effort fetch of the OIDC issuer and client ID from /auth/config."""
         if not self._host:
-            return ""
+            return None, None
         session = async_get_clientsession(self.hass)
         try:
             async with session.get(
@@ -438,15 +450,14 @@ class WardrowbeConfigFlow(
                 timeout=aiohttp.ClientTimeout(total=15),
             ) as resp:
                 if resp.status != 200:
-                    return ""
+                    return None, None
                 cfg = await resp.json()
         except (aiohttp.ClientError, TimeoutError):
-            return ""
+            return None, None
         oidc_block = cfg.get("oidc") if isinstance(cfg.get("oidc"), dict) else {}
         return (
-            oidc_block.get("issuer_url")
-            or cfg.get("issuer_url")
-            or ""
+            oidc_block.get("issuer_url") or cfg.get("issuer_url") or None,
+            oidc_block.get("client_id") or None,
         )
 
     @staticmethod
