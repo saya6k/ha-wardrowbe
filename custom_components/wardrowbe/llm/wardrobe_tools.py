@@ -9,7 +9,12 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 
 from custom_components.wardrowbe.api import WardrowbeApiError
-from custom_components.wardrowbe.const import EVENT_GROUP_WASH
+from custom_components.wardrowbe.const import (
+    EVENT_GROUP_WASH,
+    ITEM_COLORS,
+    ITEM_FORMALITY,
+    ITEM_SEASONS,
+)
 
 from .base_tool import BaseWardrowbeTool
 from .render import extract_image_url, svg_summary
@@ -171,8 +176,10 @@ class GetWardrobeItemsTool(BaseWardrowbeTool):
         "or when the user asks what clothes they have. Optional filters, all "
         "combinable: type and subtype (exact values; the result's available_types "
         "lists the user's real types, so retry with one of those if nothing "
-        "matched), colors (list, matches any), favorite, season (e.g. winter; "
-        "all-season items are included), formality (e.g. casual, formal), "
+        "matched), colors (list, matches any; use these exact values: "
+        f"{', '.join(ITEM_COLORS)}), favorite, season ({', '.join(ITEM_SEASONS)}; "
+        "all-season items are included), formality (exact, one of "
+        f"{', '.join(ITEM_FORMALITY)}), "
         "search (free text in name/brand), limit (1-100, default 60). Set "
         "auto_display true only when the user asked to see their clothes; leave "
         "it false when you are just picking items for an outfit."
