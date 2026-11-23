@@ -11,12 +11,14 @@ from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClien
 from custom_components.wardrowbe.api import (
     DevTokenProvider,
     WardrowbeApiError,
+    WardrowbeAuthError,
     WardrowbeClient,
 )
 from custom_components.wardrowbe.const import (
     API_AUTH_SESSION,
     API_AUTH_SYNC,
     API_CAPABILITIES,
+    API_HEALTH,
 )
 
 HOST = "http://wardrowbe.test"
@@ -60,6 +62,44 @@ async def test_capabilities_none_on_transport_error(
 ) -> None:
     aioclient_mock.get(f"{HOST}{API_CAPABILITIES}", exc=aiohttp.ClientError())
     assert await _client(hass).async_capabilities() is None
+
+
+async def test_capabilities_none_on_timeout(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    aioclient_mock.get(f"{HOST}{API_CAPABILITIES}", exc=TimeoutError())
+    assert await _client(hass).async_capabilities() is None
+
+
+async def test_health_false_on_timeout(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    aioclient_mock.get(f"{HOST}{API_HEALTH}", exc=TimeoutError())
+    assert await _client(hass).async_health() is False
+
+
+async def test_request_timeout_wrapped_as_api_error(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """A timeout surfaces as WardrowbeApiError with the TimeoutError as cause."""
+    aioclient_mock.post(
+        f"{HOST}{API_AUTH_SYNC}",
+        json={"access_token": "jwt", "expires_in": 100000},
+    )
+    aioclient_mock.get(f"{HOST}{API_AUTH_SESSION}", exc=TimeoutError())
+    with pytest.raises(WardrowbeApiError) as exc:
+        await _client(hass).async_session_info()
+    assert isinstance(exc.value.__cause__, TimeoutError)
+
+
+async def test_auth_sync_timeout_wrapped_as_api_error(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    aioclient_mock.post(f"{HOST}{API_AUTH_SYNC}", exc=TimeoutError())
+    with pytest.raises(WardrowbeApiError) as exc:
+        await _client(hass).async_session_info()
+    assert not isinstance(exc.value, WardrowbeAuthError)
+    assert isinstance(exc.value.__cause__, TimeoutError)
 
 
 async def test_api_error_carries_http_status(

@@ -184,7 +184,7 @@ class WardrowbeClient:
                 timeout=aiohttp.ClientTimeout(total=DEFAULT_TIMEOUT),
             ) as resp:
                 return resp.status == 200
-        except aiohttp.ClientError:
+        except (aiohttp.ClientError, TimeoutError):
             return False
 
     async def async_capabilities(self) -> dict[str, Any] | None:
@@ -203,7 +203,7 @@ class WardrowbeClient:
                 if resp.status != 200:
                     return None
                 data = await resp.json(content_type=None)
-        except aiohttp.ClientError:
+        except (aiohttp.ClientError, TimeoutError):
             return None
         return data if isinstance(data, dict) else None
 
@@ -325,7 +325,7 @@ class WardrowbeClient:
                             f"/auth/sync failed: {resp.status} {body_text}"
                         )
                     body = await resp.json(content_type=None)
-            except aiohttp.ClientError as err:
+            except (aiohttp.ClientError, TimeoutError) as err:
                 raise WardrowbeApiError(f"/auth/sync transport error: {err}") from err
             jwt = body.get("access_token")
             if not jwt:
@@ -366,7 +366,7 @@ class WardrowbeClient:
                     if resp.status == 204:
                         return None
                     return await resp.json(content_type=None)
-            except aiohttp.ClientError as err:
+            except (aiohttp.ClientError, TimeoutError) as err:
                 raise WardrowbeApiError(f"{method} {path} failed: {err}") from err
         if last_status == 401:
             raise WardrowbeAuthError(

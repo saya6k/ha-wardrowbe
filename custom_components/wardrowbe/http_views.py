@@ -69,6 +69,6 @@ class WardrowbeImageProxyView(HomeAssistantView):
                 response = web.Response(body=body, content_type=content_type)
                 response.headers["Cache-Control"] = "private, max-age=3600"
                 return response
-        except ClientError as err:
+        except (ClientError, TimeoutError) as err:
             _LOGGER.warning("Wardrowbe image proxy failed for %s: %s", target, err)
             return web.Response(status=502)
