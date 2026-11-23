@@ -34,6 +34,10 @@ except ImportError:  # older cores
 
 _LOGGER = logging.getLogger(__name__)
 
+# How many refreshes a local-action suppression marker survives. Two covers
+# the refresh requested right after the action plus one already in flight.
+_LOCAL_MARKER_REFRESHES = 2
+
 
 @dataclass(slots=True)
 class PendingEvent:
@@ -80,8 +84,10 @@ class WardrowbeCoordinator(DataUpdateCoordinator[WardrowbeData]):
         # Suppression markers: ids the integration just acted on locally,
         # so the next diff skips the matching server-state inference and
         # we don't double-fire alongside the immediate record_local_event.
-        self._recent_local_wash_ids: set[str] = set()
-        self._recent_local_feedback_ids: set[str] = set()
+        # Values count down per refresh so an unmatched marker can't suppress
+        # a genuine later event forever.
+        self._recent_local_wash_ids: dict[str, int] = {}
+        self._recent_local_feedback_ids: dict[str, int] = {}
         self._primed = False
 
     async def _async_update_data(self) -> WardrowbeData:
@@ -140,13 +146,15 @@ class WardrowbeCoordinator(DataUpdateCoordinator[WardrowbeData]):
             {"config_entry_id": self.config_entry.entry_id, **payload},
         )
         if group == EVENT_GROUP_WASH and payload.get("item_id") is not None:
-            self._recent_local_wash_ids.add(str(payload["item_id"]))
+            self._recent_local_wash_ids[str(payload["item_id"])] = _LOCAL_MARKER_REFRESHES
         elif (
             group == EVENT_GROUP_OUTFIT
             and event_type == "feedback_submitted"
             and payload.get("outfit_id") is not None
         ):
-            self._recent_local_feedback_ids.add(str(payload["outfit_id"]))
+            self._recent_local_feedback_ids[str(payload["outfit_id"])] = (
+                _LOCAL_MARKER_REFRESHES
+            )
         if self.data is not None:
             self.data.pending_events = [PendingEvent(group, event_type, dict(payload))]
             self.async_update_listeners()
@@ -190,13 +198,11 @@ class WardrowbeCoordinator(DataUpdateCoordinator[WardrowbeData]):
                 previous_feedback is not None
                 and previous_feedback != feedback
                 and any(v is not None for v in feedback)
+                and self._recent_local_feedback_ids.pop(oid, None) is None
             ):
-                if oid in self._recent_local_feedback_ids:
-                    self._recent_local_feedback_ids.discard(oid)
-                else:
-                    events.append(
-                        PendingEvent(EVENT_GROUP_OUTFIT, "feedback_submitted", outfit)
-                    )
+                events.append(
+                    PendingEvent(EVENT_GROUP_OUTFIT, "feedback_submitted", outfit)
+                )
 
         wash_ids_now: set[str] = set()
         new_wash_meta: dict[str, dict[str, Any]] = {}
@@ -212,8 +218,7 @@ class WardrowbeCoordinator(DataUpdateCoordinator[WardrowbeData]):
             }
         if self._primed:
             for old_id in self._known_wash_item_ids - wash_ids_now:
-                if old_id in self._recent_local_wash_ids:
-                    self._recent_local_wash_ids.discard(old_id)
+                if self._recent_local_wash_ids.pop(old_id, None) is not None:
                     continue
                 payload = self._known_wash_item_meta.get(
                     old_id, {"item_id": old_id}
@@ -239,7 +244,16 @@ class WardrowbeCoordinator(DataUpdateCoordinator[WardrowbeData]):
         self._known_wash_item_ids = wash_ids_now
         self._known_wash_item_meta = new_wash_meta
         self._primed = True
+        _age_markers(self._recent_local_wash_ids)
+        _age_markers(self._recent_local_feedback_ids)
         return events
+
+
+def _age_markers(markers: dict[str, int]) -> None:
+    for key in list(markers):
+        markers[key] -= 1
+        if markers[key] <= 0:
+            del markers[key]
 
 
 def _stringify_id(item: dict[str, Any]) -> str | None:
