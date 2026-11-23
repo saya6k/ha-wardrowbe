@@ -115,3 +115,46 @@ async def test_view_passes_upstream_content_type(
     assert response.headers["Content-Type"] == upstream_type
     assert response.body == b"img"
     mock_client.async_fetch_image.assert_awaited_with(IMG, "sig=abc")
+
+
+@pytest.mark.parametrize(
+    "upstream_type",
+    ["text/html", "text/html; charset=utf-8", "application/javascript", "", "IMAGE"],
+)
+async def test_view_rejects_non_image_content(
+    hass: HomeAssistant,
+    dev_mode_entry: MockConfigEntry,
+    mock_client: AsyncMock,
+    upstream_type: str,
+) -> None:
+    """Never serve non-image bytes from HA's origin on this unauthenticated view."""
+    dev_mode_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(dev_mode_entry.entry_id)
+    await hass.async_block_till_done()
+    mock_client.async_fetch_image.return_value = (b"<script>", upstream_type)
+
+    view = WardrowbeImageProxyView(hass)
+    request = make_mocked_request("GET", "/api/wardrowbe/image/x")
+    response = await view.get(request, dev_mode_entry.entry_id, IMG.lstrip("/"))
+
+    assert response.status == 502
+    assert response.body is None
+
+
+async def test_view_sandboxes_images(
+    hass: HomeAssistant, dev_mode_entry: MockConfigEntry, mock_client: AsyncMock
+) -> None:
+    """SVG is image/* yet scriptable when opened directly; sandbox it."""
+    dev_mode_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(dev_mode_entry.entry_id)
+    await hass.async_block_till_done()
+    mock_client.async_fetch_image.return_value = (b"<svg/>", "Image/SVG+XML")
+
+    view = WardrowbeImageProxyView(hass)
+    request = make_mocked_request("GET", "/api/wardrowbe/image/x")
+    response = await view.get(request, dev_mode_entry.entry_id, IMG.lstrip("/"))
+
+    assert response.status == 200
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+    assert "sandbox" in response.headers["Content-Security-Policy"]
+    assert "script-src" not in response.headers["Content-Security-Policy"]
