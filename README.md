@@ -50,6 +50,7 @@ Each entity event is mirrored on the Home Assistant event bus (so you can use `t
 
 Every payload includes the originating `config_entry_id`.
 
+<!-- ha-marketplace:exclude-start -->
 ## Installation
 
 ### HACS (recommended)
@@ -59,7 +60,6 @@ Every payload includes the originating `config_entry_id`.
 1. In HACS → Integrations → Custom repositories, add `https://github.com/saya6k/ha-wardrowbe` as type **Integration**.
 2. Install **Wardrowbe** from HACS.
 3. Restart Home Assistant.
-4. **Settings → Devices & Services → Add Integration → Wardrowbe**.
 
 ### Manual
 
@@ -75,8 +75,11 @@ scripts/test             # ruff + mypy + pytest
 ```
 
 VS Code → "Reopen in Container" picks up `.devcontainer/devcontainer.json` and runs `scripts/setup` for you. `scripts/test` forwards extra arguments to pytest (e.g. `scripts/test tests/test_config_flow.py`), and the integration logs to `config/home-assistant.log` at DEBUG level.
+<!-- ha-marketplace:exclude-end -->
 
 ## Configuration
+
+Add it from **Settings → Devices & Services → Add Integration → Wardrowbe**.
 
 ### OIDC
 
