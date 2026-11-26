@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from unittest.mock import AsyncMock
 
 import pytest
 from aiohttp.test_utils import make_mocked_request
+from homeassistant.components.http.auth import async_sign_path
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -16,6 +18,7 @@ from custom_components.wardrowbe.api import (
     DevTokenProvider,
     WardrowbeApiError,
     WardrowbeClient,
+    _resolve_image_urls,
 )
 from custom_components.wardrowbe.http_views import (
     WardrowbeImageProxyView,
@@ -127,7 +130,7 @@ async def test_view_rejects_non_image_content(
     mock_client: AsyncMock,
     upstream_type: str,
 ) -> None:
-    """Never serve non-image bytes from HA's origin on this unauthenticated view."""
+    """Never serve non-image bytes from HA's origin."""
     dev_mode_entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(dev_mode_entry.entry_id)
     await hass.async_block_till_done()
@@ -158,3 +161,35 @@ async def test_view_sandboxes_images(
     assert response.headers["X-Content-Type-Options"] == "nosniff"
     assert "sandbox" in response.headers["Content-Security-Policy"]
     assert "script-src" not in response.headers["Content-Security-Policy"]
+
+
+def test_resolve_image_urls_signs_proxy_paths() -> None:
+    payload = {"image_url": f"{IMG}?sig=abc", "nested": [{"thumbnail_url": IMG}]}
+    _resolve_image_urls(payload, HOST, "e1", lambda p: f"signed:{p}")
+    assert payload["image_url"] == f"signed:/api/wardrowbe/image/e1{IMG}?sig=abc"
+    assert payload["nested"][0]["thumbnail_url"] == f"signed:/api/wardrowbe/image/e1{IMG}"
+
+
+async def test_view_requires_auth(
+    hass: HomeAssistant,
+    dev_mode_entry: MockConfigEntry,
+    mock_client: AsyncMock,
+    hass_client_no_auth,
+) -> None:
+    """A leaked bare proxy URL must not serve images without HA auth."""
+    dev_mode_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(dev_mode_entry.entry_id)
+    await hass.async_block_till_done()
+    mock_client.async_fetch_image.return_value = (b"img", "image/jpeg")
+    client = await hass_client_no_auth()
+
+    path = f"/api/wardrowbe/image/{dev_mode_entry.entry_id}{IMG}?expires=1&sig=abc"
+    response = await client.get(path)
+    assert response.status == 401
+    mock_client.async_fetch_image.assert_not_awaited()
+
+    response = await client.get(async_sign_path(hass, path, timedelta(minutes=5)))
+    assert response.status == 200
+    assert await response.read() == b"img"
+    # HA's authSig stays on HA's side; Wardrowbe only sees its own signature.
+    mock_client.async_fetch_image.assert_awaited_with(IMG, "expires=1&sig=abc")

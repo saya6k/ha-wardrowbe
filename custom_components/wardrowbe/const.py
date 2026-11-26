@@ -11,6 +11,8 @@ LLM_API_NAME: Final = "Wardrowbe"
 
 DEFAULT_SCAN_INTERVAL: Final = timedelta(seconds=120)
 DEFAULT_TIMEOUT: Final = 30
+# Lifetime of signed image-proxy paths; matches Wardrowbe's own presigned URLs.
+IMAGE_URL_TTL: Final = timedelta(hours=1)
 
 # Config keys
 CONF_HOST: Final = "host"

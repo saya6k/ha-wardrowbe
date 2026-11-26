@@ -7,18 +7,21 @@ voice-satellite card) resolve those paths against the wrong host and
 404. This view rebroadcasts the bytes from HA's own HTTP server so any
 consumer just hits ``/api/wardrowbe/image/{entry_id}/...`` on HA.
 
-The view does not require HA auth: the Wardrowbe signature on the URL
-already gates access, and bouncing the request through here without
-revealing Wardrowbe's own hostname is the whole point.
+The view requires HA auth. URLs handed out in entity attributes, events,
+service responses and LLM tool results are signed with
+``async_sign_path``, so an ``<img>`` can still load them without an auth
+header; the upstream Wardrowbe signature is forwarded untouched.
 """
 
 from __future__ import annotations
 
 import logging
 import posixpath
+from urllib.parse import urlencode
 
 from aiohttp import web
 from homeassistant.components.http import HomeAssistantView
+from homeassistant.components.http.auth import SIGN_QUERY_PARAM
 from homeassistant.core import HomeAssistant
 
 from .api import WardrowbeApiError
@@ -28,8 +31,8 @@ _LOGGER = logging.getLogger(__name__)
 
 _ALLOWED_PATH_PREFIX = "/api/v1/images/"
 
-# The view is unauthenticated and same-origin with HA, so whatever it serves
-# runs with HA's origin if opened directly. Only pass images, never let the
+# The view is same-origin with HA, so whatever it serves runs with HA's
+# origin if opened directly. Only pass images, never let the
 # browser sniff them into something else, and sandbox them: SVG is image/*
 # yet can carry script. Embedding via <img> is unaffected by these headers.
 _IMAGE_RESPONSE_HEADERS = {
@@ -54,7 +57,6 @@ class WardrowbeImageProxyView(HomeAssistantView):
 
     url = "/api/wardrowbe/image/{entry_id}/{path:.*}"
     name = "api:wardrowbe:image"
-    requires_auth = False
 
     def __init__(self, hass: HomeAssistant) -> None:
         self._hass = hass
@@ -73,9 +75,13 @@ class WardrowbeImageProxyView(HomeAssistantView):
         if full_path is None:
             return web.Response(status=403)
 
+        # HA's own signature is for this view only; Wardrowbe gets just its own.
+        upstream_query = urlencode(
+            [(k, v) for k, v in request.query.items() if k != SIGN_QUERY_PARAM]
+        )
         try:
             body, content_type = await runtime.client.async_fetch_image(
-                full_path, request.query_string
+                full_path, upstream_query
             )
         except WardrowbeApiError as err:
             if err.status is None:
