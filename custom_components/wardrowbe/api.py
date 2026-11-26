@@ -16,6 +16,7 @@ import base64
 import binascii
 import json
 import logging
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from urllib.parse import quote
@@ -44,7 +45,7 @@ _LOGGER = logging.getLogger(__name__)
 
 _JWT_REFRESH_LEEWAY = timedelta(hours=1)
 _DEFAULT_JWT_TTL_SECONDS = 6 * 24 * 3600  # 6 days; Wardrowbe defaults to 7
-# Images are proxied unauthenticated through HA, so cap what one request can pull.
+# Images are proxied through HA, so cap what one request can pull.
 MAX_IMAGE_BYTES = 20 * 1024 * 1024
 
 
@@ -157,7 +158,7 @@ def _decode_jwt_payload(id_token: str) -> dict[str, Any]:
 class WardrowbeClient:
     """Async client for Wardrowbe's REST API."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 — keyword-only options
         self,
         session: ClientSession,
         host: str,
@@ -165,12 +166,14 @@ class WardrowbeClient:
         *,
         verify_ssl: bool = True,
         entry_id: str | None = None,
+        sign_path: Callable[[str], str] | None = None,
     ) -> None:
         self._session = session
         self._host = host.rstrip("/")
         self._token_provider = token_provider
         self._verify_ssl = verify_ssl
         self._entry_id = entry_id
+        self._sign_path = sign_path
         self._jwt: str | None = None
         # Bumped on every successful sync; lets a 401'd request tell whether
         # someone else already re-synced since it fetched its JWT.
@@ -232,13 +235,13 @@ class WardrowbeClient:
     async def async_analytics(self) -> dict[str, Any]:
         data = await self._request("GET", API_ANALYTICS)
         if isinstance(data, dict):
-            _resolve_image_urls(data, self._host, self._entry_id)
+            _resolve_image_urls(data, self._host, self._entry_id, self._sign_path)
         return data
 
     async def async_recent_outfits(self, limit: int = 20) -> list[dict[str, Any]]:
         data = await self._request("GET", API_OUTFITS, params={"limit": limit})
         outfits = _coerce_list(data)
-        _resolve_image_urls(outfits, self._host, self._entry_id)
+        _resolve_image_urls(outfits, self._host, self._entry_id, self._sign_path)
         return outfits
 
     async def async_recent_notifications(self, limit: int = 50) -> list[dict[str, Any]]:
@@ -258,7 +261,7 @@ class WardrowbeClient:
             },
         )
         items = _coerce_list(data)
-        _resolve_image_urls(items, self._host, self._entry_id)
+        _resolve_image_urls(items, self._host, self._entry_id, self._sign_path)
         return items
 
     async def async_list_items(  # noqa: PLR0913 — one kwarg per server filter
@@ -284,7 +287,7 @@ class WardrowbeClient:
         if search:
             params["search"] = search
         items = _coerce_list(await self._request("GET", API_ITEMS, params=params))
-        _resolve_image_urls(items, self._host, self._entry_id)
+        _resolve_image_urls(items, self._host, self._entry_id, self._sign_path)
         return items
 
     async def async_item_types(self) -> list[dict[str, Any]]:
@@ -296,7 +299,7 @@ class WardrowbeClient:
     async def async_suggest_outfit(self, payload: dict[str, Any]) -> dict[str, Any]:
         result = await self._request("POST", API_OUTFIT_SUGGEST, json=payload)
         if isinstance(result, dict):
-            _resolve_image_urls(result, self._host, self._entry_id)
+            _resolve_image_urls(result, self._host, self._entry_id, self._sign_path)
         return result
 
     async def async_create_outfit_suggestion(
@@ -304,7 +307,7 @@ class WardrowbeClient:
     ) -> dict[str, Any]:
         result = await self._request("POST", API_OUTFIT_SUGGESTIONS, json=payload)
         if isinstance(result, dict):
-            _resolve_image_urls(result, self._host, self._entry_id)
+            _resolve_image_urls(result, self._host, self._entry_id, self._sign_path)
         return result
 
     async def async_outfit_action(self, outfit_id: str, action: str) -> dict[str, Any]:
@@ -516,7 +519,10 @@ IMAGE_URL_KEYS: tuple[str, ...] = (
 
 
 def _resolve_image_urls(
-    payload: Any, host: str, entry_id: str | None = None
+    payload: Any,
+    host: str,
+    entry_id: str | None = None,
+    sign_path: Callable[[str], str] | None = None,
 ) -> None:
     """Recursively rewrite relative Wardrowbe image URLs in-place.
 
@@ -524,12 +530,14 @@ def _resolve_image_urls(
     HA-side proxy view (``/api/wardrowbe/image/{entry_id}/...``) so
     browsers always load images from HA's own origin — sidestepping
     mixed-content, CORS, and split-network issues with the Wardrowbe
-    host. Without ``entry_id`` we fall back to prepending the Wardrowbe
-    host directly.
+    host. The view requires HA auth, so ``sign_path`` turns each proxy path
+    into a short-lived signed one that an ``<img>`` can load without an
+    auth header. Without ``entry_id`` we fall back to prepending the
+    Wardrowbe host directly.
     """
     if isinstance(payload, list):
         for entry in payload:
-            _resolve_image_urls(entry, host, entry_id)
+            _resolve_image_urls(entry, host, entry_id, sign_path)
         return
     if not isinstance(payload, dict):
         return
@@ -542,9 +550,10 @@ def _resolve_image_urls(
         if val.startswith("/api/wardrowbe/image/"):
             continue
         if entry_id:
-            payload[key] = f"/api/wardrowbe/image/{entry_id}{val}"
+            proxied = f"/api/wardrowbe/image/{entry_id}{val}"
+            payload[key] = sign_path(proxied) if sign_path else proxied
         elif host:
             payload[key] = f"{host}{val}"
     for val in payload.values():
         if isinstance(val, (list, dict)):
-            _resolve_image_urls(val, host, entry_id)
+            _resolve_image_urls(val, host, entry_id, sign_path)

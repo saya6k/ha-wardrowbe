@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
+from homeassistant.components.http.auth import async_sign_path
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
@@ -34,6 +35,7 @@ from .const import (
     CONF_USE_PKCE,
     CONF_VERIFY_SSL,
     DOMAIN,
+    IMAGE_URL_TTL,
 )
 from .coordinator import WardrowbeCoordinator
 from .http_views import WardrowbeImageProxyView
@@ -97,6 +99,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: WardrowbeConfigEntry) ->
         token_provider,
         verify_ssl=verify_ssl,
         entry_id=entry.entry_id,
+        sign_path=lambda path: async_sign_path(hass, path, IMAGE_URL_TTL),
     )
     coordinator = WardrowbeCoordinator(hass, entry, client)
 
