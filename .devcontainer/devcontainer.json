@@ -1,6 +1,6 @@
 {
   "name": "ha-wardrowbe-dev",
-  "image": "ghcr.io/home-assistant/home-assistant:2026.10.0.dev202609290227",
+  "image": "ghcr.io/home-assistant/home-assistant:2026.10.0",
   "runArgs": ["--hostname=ha-wardrowbe-dev", "--entrypoint", "/bin/bash", "-p", "8123:8123"],
   "overrideCommand": true,
   "postCreateCommand": "scripts/setup",
