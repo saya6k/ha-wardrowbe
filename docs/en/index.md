@@ -45,8 +45,8 @@ Every payload includes the originating `config_entry_id`.
 
 ### HACS (recommended)
 
-1. In HACS → Integrations → Custom repositories, add `https://github.com/saya6k/ha-wardrowbe` as type **Integration**.
-2. Install **Wardrowbe** from HACS.
+1. **HACS** → search for **Wardrowbe**
+2. Install it.
 3. Restart Home Assistant.
 4. **Settings → Devices & Services → Add Integration → Wardrowbe**.
 

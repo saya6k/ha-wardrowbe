@@ -45,8 +45,8 @@
 
 ### HACS (권장)
 
-1. HACS → Integrations → Custom repositories에서 `https://github.com/saya6k/ha-wardrowbe`를 **Integration** 타입으로 추가.
-2. HACS에서 **Wardrowbe** 설치.
+1. **HACS** → **Wardrowbe** 검색
+2. 설치.
 3. Home Assistant 재시작.
 4. **설정 → 기기 및 서비스 → 통합 추가 → Wardrowbe**.
 
