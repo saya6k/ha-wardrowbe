@@ -383,6 +383,48 @@
         }
       }
     },
+    "add_item": {
+      "name": "Aggiungi capo",
+      "description": "Aggiunge un capo al guardaroba da una foto, indicata come percorso di file o URL. Restituisce il nuovo capo.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "L'account Wardrowbe (voce di configurazione) su cui agire."
+        },
+        "image_path": {
+          "name": "File immagine",
+          "description": "Percorso di una foto JPEG, PNG, WebP o HEIC sull'host di Home Assistant, fino a 20 MB. La sua cartella deve essere elencata in allowlist_external_dirs. Usa questo oppure URL immagine."
+        },
+        "image_url": {
+          "name": "URL immagine",
+          "description": "URL di una foto JPEG, PNG, WebP o HEIC, fino a 20 MB, che Home Assistant scarica. Usa questo oppure File immagine."
+        },
+        "type": {
+          "name": "Tipo",
+          "description": "Il tipo di capo, ad es. shirt o jeans. L'IA lo rileverà se vuoto."
+        },
+        "name": {
+          "name": "Nome",
+          "description": "Nome facoltativo del capo."
+        },
+        "brand": {
+          "name": "Marca",
+          "description": "La marca del capo."
+        },
+        "primary_color": {
+          "name": "Colore principale",
+          "description": "Il colore principale, ad es. navy. L'IA lo rileverà se vuoto."
+        },
+        "notes": {
+          "name": "Note",
+          "description": "Note libere salvate con il capo."
+        },
+        "skip_ai": {
+          "name": "Salta l’analisi IA",
+          "description": "Aggiungi con valori segnaposto invece di far etichettare la foto all'IA; modifica i dettagli in seguito."
+        }
+      }
+    },
     "test_notification": {
       "name": "Notifica di test",
       "description": "Invia una notifica di test tramite un'impostazione configurata.",

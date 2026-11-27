@@ -248,6 +248,42 @@ restore_item:
       selector:
         text:
 
+add_item:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: wardrowbe
+    image_path:
+      example: /media/wardrobe/shirt.jpg
+      selector:
+        text:
+    image_url:
+      example: https://example.com/shirt.jpg
+      selector:
+        text:
+          type: url
+    type:
+      selector:
+        text:
+    name:
+      selector:
+        text:
+    brand:
+      selector:
+        text:
+    primary_color:
+      selector:
+        text:
+    notes:
+      selector:
+        text:
+          multiline: true
+    skip_ai:
+      selector:
+        boolean:
+
 test_notification:
   fields:
     config_entry_id:

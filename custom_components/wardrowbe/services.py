@@ -26,9 +26,12 @@ from homeassistant.helpers import config_validation as cv
 from .api import WardrowbeApiError, WardrowbeClient, weather_override_payload
 from .const import (
     ACTIONABLE_OUTFIT_STATUSES,
+    ATTR_BRAND,
     ATTR_CONFIG_ENTRY_ID,
     ATTR_DATE,
     ATTR_EXCLUDE_STATUSES,
+    ATTR_IMAGE_PATH,
+    ATTR_IMAGE_URL,
     ATTR_INCLUDE_STATUSES,
     ATTR_ITEM_ID,
     ATTR_ITEM_IDS,
@@ -37,13 +40,16 @@ from .const import (
     ATTR_OCCASION,
     ATTR_OUTFIT_ID,
     ATTR_PRECIPITATION_CHANCE,
+    ATTR_PRIMARY_COLOR,
     ATTR_RATING,
     ATTR_REASON,
     ATTR_REASONING,
     ATTR_SCHEDULED_FOR,
     ATTR_SETTING_ID,
+    ATTR_SKIP_AI,
     ATTR_TEMPERATURE,
     ATTR_TIME_OF_DAY,
+    ATTR_TYPE,
     ATTR_WEATHER_CONDITION,
     ATTR_WORE,
     DOMAIN,
@@ -51,6 +57,7 @@ from .const import (
     EVENT_GROUP_WASH,
     EVENT_GROUP_WEAR,
     SERVICE_ACCEPT_OUTFIT,
+    SERVICE_ADD_ITEM,
     SERVICE_ARCHIVE_ITEM,
     SERVICE_CREATE_OUTFIT_SUGGESTION,
     SERVICE_GET_SUMMARY,
@@ -70,6 +77,7 @@ from .const import (
     WEATHER_CONDITIONS,
 )
 from .coordinator import WardrowbeCoordinator
+from .item_images import async_download_image, async_read_image_file
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -145,6 +153,22 @@ SCHEMA_ARCHIVE = _BASE_SCHEMA.extend(
 )
 
 SCHEMA_RESTORE = _BASE_SCHEMA.extend({vol.Required(ATTR_ITEM_ID): cv.string})
+
+SCHEMA_ADD_ITEM = vol.All(
+    _BASE_SCHEMA.extend(
+        {
+            vol.Exclusive(ATTR_IMAGE_PATH, "image"): cv.string,
+            vol.Exclusive(ATTR_IMAGE_URL, "image"): cv.url,
+            vol.Optional(ATTR_TYPE): cv.string,
+            vol.Optional(ATTR_NAME): cv.string,
+            vol.Optional(ATTR_BRAND): cv.string,
+            vol.Optional(ATTR_PRIMARY_COLOR): cv.string,
+            vol.Optional(ATTR_NOTES): cv.string,
+            vol.Optional(ATTR_SKIP_AI): cv.boolean,
+        }
+    ),
+    cv.has_at_least_one_key(ATTR_IMAGE_PATH, ATTR_IMAGE_URL),
+)
 
 SCHEMA_TEST_NOTIFICATION = _BASE_SCHEMA.extend(
     {vol.Required(ATTR_SETTING_ID): cv.string}
@@ -226,6 +250,13 @@ async def async_register_services(hass: HomeAssistant) -> None:
     )
     hass.services.async_register(
         DOMAIN,
+        SERVICE_ADD_ITEM,
+        _guard(_make_add_item_handler(hass)),
+        schema=SCHEMA_ADD_ITEM,
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    hass.services.async_register(
+        DOMAIN,
         SERVICE_TEST_NOTIFICATION,
         _guard(_make_test_notification_handler(hass)),
         schema=SCHEMA_TEST_NOTIFICATION,
@@ -251,6 +282,7 @@ async def async_unregister_services(hass: HomeAssistant) -> None:
         SERVICE_LOG_WASH,
         SERVICE_ARCHIVE_ITEM,
         SERVICE_RESTORE_ITEM,
+        SERVICE_ADD_ITEM,
         SERVICE_TEST_NOTIFICATION,
         SERVICE_GET_SUMMARY,
     ):
@@ -514,6 +546,36 @@ def _make_restore_handler(hass: HomeAssistant) -> _ServiceHandler:
         except WardrowbeApiError as err:
             raise HomeAssistantError(f"restore_item failed: {err}") from err
         await coordinator.async_request_refresh()
+
+    return _handle
+
+
+def _make_add_item_handler(hass: HomeAssistant) -> _ServiceHandler:
+    async def _handle(call: ServiceCall) -> ServiceResponse:
+        client, coordinator = _resolve_runtime(hass, call)
+        if (path := call.data.get(ATTR_IMAGE_PATH)) is not None:
+            image, filename, content_type = await async_read_image_file(hass, path)
+        else:
+            image, filename, content_type = await async_download_image(
+                hass, call.data[ATTR_IMAGE_URL]
+            )
+        fields = {
+            attr: call.data[attr]
+            for attr in (ATTR_TYPE, ATTR_NAME, ATTR_BRAND, ATTR_PRIMARY_COLOR, ATTR_NOTES)
+            if call.data.get(attr)
+        }
+        if ATTR_SKIP_AI in call.data:
+            fields[ATTR_SKIP_AI] = "true" if call.data[ATTR_SKIP_AI] else "false"
+        try:
+            result = await client.async_create_item(image, filename, content_type, fields)
+        except WardrowbeApiError as err:
+            if err.status == 409:
+                raise ServiceValidationError(
+                    f"This photo is already in your wardrobe: {err}"
+                ) from err
+            raise HomeAssistantError(f"add_item failed: {err}") from err
+        await coordinator.async_request_refresh()
+        return result
 
     return _handle
 
