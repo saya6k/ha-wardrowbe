@@ -346,6 +346,7 @@ async def test_get_wardrobe_items_tool_compacts_items(hass: HomeAssistant) -> No
                 "colors": ["navy"],
                 "style": [],
                 "tags": {"size": "M", "fit": "slim", "care_instructions": "cold"},
+                "notes": "  M, length 68cm  ",
                 "image_path": "/files/i1.jpg",
                 "ai_raw_response": {"big": "blob"},
             }
@@ -358,7 +359,14 @@ async def test_get_wardrobe_items_tool_compacts_items(hass: HomeAssistant) -> No
     result = await _call_tool(hass, GetWardrobeItemsTool, runtime, {"type": "shirt"})
     assert not result.error
     assert result.data["items"] == [
-        {"id": "i1", "type": "shirt", "colors": ["navy"], "size": "M", "fit": "slim"}
+        {
+            "id": "i1",
+            "type": "shirt",
+            "colors": ["navy"],
+            "size": "M",
+            "fit": "slim",
+            "notes": "M, length 68cm",
+        }
     ]
     assert result.data["available_types"] == [{"type": "shirt", "count": 3}]
     list_items.assert_awaited_once_with(
@@ -747,3 +755,12 @@ async def test_suggest_outfit_tool_passes_an_explicit_temperature_unit(
     suggest.assert_awaited_once_with(
         {"weather_override": {"temperature": 50.0}}, temperature_unit="fahrenheit"
     )
+
+
+def test_compact_item_caps_long_notes_and_drops_blank_ones() -> None:
+    from custom_components.wardrowbe.llm.wardrobe_tools import _ITEM_NOTES_MAX, _compact_item
+
+    long = _compact_item({"id": "i1", "notes": "x" * (_ITEM_NOTES_MAX + 50)})
+    assert long["notes"] == "x" * _ITEM_NOTES_MAX + "…"
+    assert "notes" not in _compact_item({"id": "i1", "notes": "   "})
+    assert "notes" not in _compact_item({"id": "i1", "notes": None})
