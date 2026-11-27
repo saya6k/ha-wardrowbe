@@ -128,6 +128,7 @@ async def test_hook_returns_tool_set_for_loaded_entry_none_after_unload(
         "wardrowbe__rate_outfit",
         "wardrowbe__get_style_insights",
         "wardrowbe__get_item_pairings",
+        "wardrowbe__add_wardrobe_item",
     }
 
     assert await hass.config_entries.async_unload(dev_mode_entry.entry_id)
@@ -152,9 +153,9 @@ async def test_api_instance_end_to_end(
         hass, _api_id(dev_mode_entry.entry_id), _llm_context()
     )
 
-    # 12 wardrowbe tools + HA core's own built-in GetDateTimeTool, which
+    # 18 wardrowbe tools + HA core's own built-in GetDateTimeTool, which
     # async_get_api injects into every API instance.
-    assert len(instance.tools) == 18
+    assert len(instance.tools) == 19
     assert "wardrobe" in instance.api_prompt.lower()
 
 
@@ -764,3 +765,74 @@ def test_compact_item_caps_long_notes_and_drops_blank_ones() -> None:
     assert long["notes"] == "x" * _ITEM_NOTES_MAX + "…"
     assert "notes" not in _compact_item({"id": "i1", "notes": "   "})
     assert "notes" not in _compact_item({"id": "i1", "notes": None})
+
+
+
+@requires_llm_integration
+async def test_add_item_tool_uploads_the_photo(hass: HomeAssistant) -> None:
+    from unittest.mock import patch
+
+    from custom_components.wardrowbe.llm.wardrobe_tools import AddWardrobeItemTool
+
+    runtime = _write_runtime()
+    args = {"image_url": "https://img.test/a.png", "name": "Linen shirt"}
+    with patch(
+        "custom_components.wardrowbe.llm.wardrobe_tools.async_add_item",
+        AsyncMock(return_value={"id": "n1", "name": "Linen shirt", "status": "processing"}),
+    ) as add:
+        result = await _call_tool(hass, AddWardrobeItemTool, runtime, args)
+
+    assert not result.error
+    add.assert_awaited_once_with(hass, runtime.client, args)
+    assert result.data["item"] == {
+        "id": "n1",
+        "name": "Linen shirt",
+        "type": None,
+        "status": "processing",
+    }
+    runtime.coordinator.async_request_refresh.assert_awaited_once()
+
+
+@requires_llm_integration
+@pytest.mark.parametrize(
+    "args",
+    [
+        {},
+        {"image_url": "https://img.test/a.png", "image_path": "/media/a.png"},
+        {"image_url": "file:///etc/passwd"},
+    ],
+)
+async def test_add_item_tool_needs_one_web_url_or_path(hass: HomeAssistant, args: dict) -> None:
+    from unittest.mock import patch
+
+    from custom_components.wardrowbe.llm.wardrobe_tools import AddWardrobeItemTool
+
+    with patch(
+        "custom_components.wardrowbe.llm.wardrobe_tools.async_add_item", AsyncMock()
+    ) as add:
+        result = await _call_tool(hass, AddWardrobeItemTool, _write_runtime(), args)
+
+    assert result.error
+    add.assert_not_awaited()
+
+
+@requires_llm_integration
+async def test_add_item_tool_reports_a_refused_photo(hass: HomeAssistant) -> None:
+    from unittest.mock import patch
+
+    from homeassistant.exceptions import ServiceValidationError
+
+    from custom_components.wardrowbe.llm.wardrobe_tools import AddWardrobeItemTool
+
+    runtime = _write_runtime()
+    with patch(
+        "custom_components.wardrowbe.llm.wardrobe_tools.async_add_item",
+        AsyncMock(side_effect=ServiceValidationError("This photo is already in your wardrobe")),
+    ):
+        result = await _call_tool(
+            hass, AddWardrobeItemTool, runtime, {"image_url": "https://img.test/a.png"}
+        )
+
+    assert result.error
+    assert "already in your wardrobe" in result.data["error"]
+    runtime.coordinator.async_request_refresh.assert_not_awaited()

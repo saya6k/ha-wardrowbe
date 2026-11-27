@@ -3,13 +3,27 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Mapping
 from pathlib import PurePosixPath
+from typing import Any
 from urllib.parse import urlsplit
 
 import aiohttp
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+from .api import WardrowbeApiError, WardrowbeClient
+from .const import (
+    ATTR_BRAND,
+    ATTR_IMAGE_PATH,
+    ATTR_IMAGE_URL,
+    ATTR_NAME,
+    ATTR_NOTES,
+    ATTR_PRIMARY_COLOR,
+    ATTR_SKIP_AI,
+    ATTR_TYPE,
+)
 
 # What Wardrowbe accepts for a new item. It rejects other types and anything
 # over 20 MB, so both are checked here before uploading.
@@ -90,3 +104,26 @@ async def async_download_image(hass: HomeAssistant, url: str) -> Image:
     filename = f"{url_path.stem or 'image'}{_EXTENSIONS[content_type]}"
     return bytes(body), filename, content_type
 
+
+
+# Sent to Wardrowbe under the same names as its add-item form fields.
+_FORM_FIELDS = (ATTR_TYPE, ATTR_NAME, ATTR_BRAND, ATTR_PRIMARY_COLOR, ATTR_NOTES)
+
+
+async def async_add_item(
+    hass: HomeAssistant, client: WardrowbeClient, data: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Upload the photo at data's image_path or image_url as a new item."""
+    if path := data.get(ATTR_IMAGE_PATH):
+        image, filename, content_type = await async_read_image_file(hass, path)
+    else:
+        image, filename, content_type = await async_download_image(hass, data[ATTR_IMAGE_URL])
+    fields = {attr: str(data[attr]) for attr in _FORM_FIELDS if data.get(attr)}
+    if data.get(ATTR_SKIP_AI) is not None:
+        fields[ATTR_SKIP_AI] = "true" if data[ATTR_SKIP_AI] else "false"
+    try:
+        return await client.async_create_item(image, filename, content_type, fields)
+    except WardrowbeApiError as err:
+        if err.status == 409:
+            raise ServiceValidationError(f"This photo is already in your wardrobe: {err}") from err
+        raise HomeAssistantError(f"Adding the item failed: {err}") from err

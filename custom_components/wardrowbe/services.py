@@ -77,7 +77,7 @@ from .const import (
     WEATHER_CONDITIONS,
 )
 from .coordinator import WardrowbeCoordinator
-from .item_images import async_download_image, async_read_image_file
+from .item_images import async_add_item
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -553,27 +553,7 @@ def _make_restore_handler(hass: HomeAssistant) -> _ServiceHandler:
 def _make_add_item_handler(hass: HomeAssistant) -> _ServiceHandler:
     async def _handle(call: ServiceCall) -> ServiceResponse:
         client, coordinator = _resolve_runtime(hass, call)
-        if (path := call.data.get(ATTR_IMAGE_PATH)) is not None:
-            image, filename, content_type = await async_read_image_file(hass, path)
-        else:
-            image, filename, content_type = await async_download_image(
-                hass, call.data[ATTR_IMAGE_URL]
-            )
-        fields = {
-            attr: call.data[attr]
-            for attr in (ATTR_TYPE, ATTR_NAME, ATTR_BRAND, ATTR_PRIMARY_COLOR, ATTR_NOTES)
-            if call.data.get(attr)
-        }
-        if ATTR_SKIP_AI in call.data:
-            fields[ATTR_SKIP_AI] = "true" if call.data[ATTR_SKIP_AI] else "false"
-        try:
-            result = await client.async_create_item(image, filename, content_type, fields)
-        except WardrowbeApiError as err:
-            if err.status == 409:
-                raise ServiceValidationError(
-                    f"This photo is already in your wardrobe: {err}"
-                ) from err
-            raise HomeAssistantError(f"add_item failed: {err}") from err
+        result = await async_add_item(hass, client, call.data)
         await coordinator.async_request_refresh()
         return result
 
