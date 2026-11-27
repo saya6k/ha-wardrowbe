@@ -161,6 +161,8 @@ _ITEM_FIELDS: tuple[str, ...] = (
     "wear_count",
     "last_worn_at",
 )
+# User-entered size and AI-tagged fit only exist inside the raw tags dict.
+_ITEM_TAG_FIELDS: tuple[str, ...] = ("size", "fit")
 
 
 class GetWardrobeItemsTool(BaseWardrowbeTool):
@@ -171,7 +173,7 @@ class GetWardrobeItemsTool(BaseWardrowbeTool):
     )
     description = (
         "List the user's clean, non-archived wardrobe items with their ids and "
-        "tags (type, colors, style, formality, season, wear history). Call this "
+        "tags (type, colors, style, formality, season, size, fit, wear history). Call this "
         "to compose an outfit yourself before wardrowbe__create_outfit_suggestion, "
         "or when the user asks what clothes they have. Optional filters, all "
         "combinable: type and subtype (exact values; the result's available_types "
@@ -240,10 +242,7 @@ class GetWardrobeItemsTool(BaseWardrowbeTool):
             for t in types
             if isinstance(t, dict) and t.get("type")
         ]
-        compact = [
-            {key: item[key] for key in _ITEM_FIELDS if item.get(key) not in (None, [], "")}
-            for item in items
-        ]
+        compact = [_compact_item(item) for item in items]
         if not args.get("auto_display"):
             # Intermediate lookup for outfit composition: no gallery, so the
             # satellite card only shows the outfit that gets created from it.
@@ -273,6 +272,14 @@ class GetWardrobeItemsTool(BaseWardrowbeTool):
                 "are in one short sentence; do not list them or their URLs."
             ),
         )
+
+
+def _compact_item(item: dict[str, Any]) -> dict[str, Any]:
+    out = {key: item[key] for key in _ITEM_FIELDS if item.get(key) not in (None, [], "")}
+    tags = item.get("tags")
+    if isinstance(tags, dict):
+        out.update({key: tags[key] for key in _ITEM_TAG_FIELDS if tags.get(key) not in (None, "")})
+    return out
 
 
 def _matches_colors(item: dict[str, Any], wanted: set[str]) -> bool:
@@ -409,3 +416,42 @@ class LogWashTool(BaseWardrowbeTool):
                 "sentence."
             ),
         )
+
+
+class GetBodyMeasurementsTool(BaseWardrowbeTool):
+    name = "wardrowbe__get_body_measurements"
+    title = "Get body measurements"
+    annotations = llm.ToolAnnotations(
+        read_only=True, destructive=False, idempotent=True, open_world=False
+    )
+    description = (
+        "Return the body measurements and clothing sizes the user saved in "
+        "Wardrowbe. Numeric keys are always metric regardless of the user's "
+        "display setting: height, chest, waist, hips and inseam in cm, weight "
+        "in kg. Size keys (shirt_size, pants_size, dress_size, shoe_size) are "
+        "free text as the user typed them. Keys the user never filled in are "
+        "absent; an empty object means nothing was entered. Call this when the "
+        "user asks about their own measurements or sizes, or whether an item "
+        "would fit them (compare with the size and fit of items from "
+        "wardrowbe__get_wardrobe_items)."
+    )
+    parameters = vol.Schema({})
+
+    async def async_call(
+        self,
+        hass: HomeAssistant,
+        tool_input: llm.ToolInput,
+        llm_context: llm.LLMContext,
+    ) -> llm.ToolResult:
+        runtime = self.runtime
+        if runtime is None:
+            return self.error("Wardrowbe is not loaded.")
+        try:
+            profile = await runtime.client.async_user_profile()
+        except WardrowbeApiError as err:
+            return self.error(f"get_body_measurements failed: {err}")
+        raw = profile.get("body_measurements") if isinstance(profile, dict) else None
+        if not isinstance(raw, dict):
+            raw = {}
+        measurements = {key: value for key, value in raw.items() if value not in (None, "")}
+        return self.envelope(body_measurements=measurements)

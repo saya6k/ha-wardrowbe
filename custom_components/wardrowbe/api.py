@@ -38,6 +38,7 @@ from .const import (
     API_OUTFIT_SUGGEST,
     API_OUTFIT_SUGGESTIONS,
     API_OUTFITS,
+    API_USER_PROFILE,
     DEFAULT_TIMEOUT,
 )
 
@@ -293,6 +294,9 @@ class WardrowbeClient:
     async def async_item_types(self) -> list[dict[str, Any]]:
         """The user's item types with counts, e.g. [{"type": "shirt", "count": 12}]."""
         return _coerce_list(await self._request("GET", API_ITEM_TYPES))
+
+    async def async_user_profile(self) -> dict[str, Any]:
+        return await self._request("GET", API_USER_PROFILE)
 
     # ---- authenticated writes ----
 
