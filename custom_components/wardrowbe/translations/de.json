@@ -205,7 +205,7 @@
         },
         "temperature": {
           "name": "Temperatur",
-          "description": "Ersetzt das Wetter am Standort durch diese Temperatur in °C."
+          "description": "Ersetzt das Wetter am Standort durch diese Temperatur, in der in Wardrowbe eingestellten Temperatureinheit (°C oder °F)."
         },
         "weather_condition": {
           "name": "Bedingungen",

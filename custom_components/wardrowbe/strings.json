@@ -205,7 +205,7 @@
         },
         "temperature": {
           "name": "Temperature",
-          "description": "Override the weather at your location with this temperature in °C."
+          "description": "Override the weather at your location with this temperature, in the temperature unit set in Wardrowbe (°C or °F)."
         },
         "weather_condition": {
           "name": "Condition",

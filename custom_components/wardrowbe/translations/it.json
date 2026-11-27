@@ -205,7 +205,7 @@
         },
         "temperature": {
           "name": "Temperatura",
-          "description": "Sostituisce il meteo locale con questa temperatura in °C."
+          "description": "Sostituisce il meteo locale con questa temperatura, nell'unità di temperatura impostata in Wardrowbe (°C o °F)."
         },
         "weather_condition": {
           "name": "Condizioni",

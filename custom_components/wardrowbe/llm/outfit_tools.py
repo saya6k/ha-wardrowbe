@@ -12,9 +12,10 @@ from custom_components.wardrowbe.api import WardrowbeApiError, weather_override_
 from custom_components.wardrowbe.const import (
     ACTIONABLE_OUTFIT_STATUSES,
     EVENT_GROUP_OUTFIT,
+    TEMPERATURE_UNITS,
     VALID_OCCASIONS,
     VALID_PRECIPITATION_CHANCE,
-    VALID_TEMPERATURE_C,
+    VALID_TEMPERATURE,
     VALID_TIME_OF_DAY,
     WEATHER_CONDITIONS,
 )
@@ -38,9 +39,12 @@ class SuggestOutfitTool(BaseWardrowbeTool):
         "today and takes no free-text hints. By default it uses the live "
         "weather at the user's location; to plan for other weather (the user "
         "says it's raining, or a Home Assistant forecast says otherwise), pass "
-        "temperature in °C (convert from °F first), optionally with "
+        "temperature, optionally with "
         f"weather_condition ({', '.join(WEATHER_CONDITIONS)}) and "
         "precipitation_chance (0-100; defaults from the condition). "
+        "temperature is read in the user's Wardrowbe unit unless you set "
+        "temperature_unit (celsius or fahrenheit) to the unit your number is "
+        "in. Weather in the returned outfit is in weather.temperature_unit. "
         "Produces a pending outfit; follow up with "
         "wardrowbe__accept_latest_outfit, wardrowbe__reject_latest_outfit, or "
         "wardrowbe__skip_latest_outfit once the user reacts to it. If it "
@@ -52,9 +56,10 @@ class SuggestOutfitTool(BaseWardrowbeTool):
         {
             vol.Optional("occasion"): vol.In(VALID_OCCASIONS),
             vol.Optional("time_of_day"): vol.In(VALID_TIME_OF_DAY),
-            vol.Optional("temperature"): VALID_TEMPERATURE_C,
+            vol.Optional("temperature"): VALID_TEMPERATURE,
             vol.Optional("weather_condition"): vol.In(WEATHER_CONDITIONS),
             vol.Optional("precipitation_chance"): VALID_PRECIPITATION_CHANCE,
+            vol.Optional("temperature_unit"): vol.In(TEMPERATURE_UNITS),
         }
     )
 
@@ -85,7 +90,12 @@ class SuggestOutfitTool(BaseWardrowbeTool):
                 "Pass temperature (°C) along with weather_condition or precipitation_chance."
             )
         try:
-            outfit = await runtime.client.async_suggest_outfit(payload)
+            if weather is not None and args.get("temperature_unit"):
+                outfit = await runtime.client.async_suggest_outfit(
+                    payload, temperature_unit=args["temperature_unit"]
+                )
+            else:
+                outfit = await runtime.client.async_suggest_outfit(payload)
         except WardrowbeApiError as err:
             if err.status == 503:
                 return self.error(
