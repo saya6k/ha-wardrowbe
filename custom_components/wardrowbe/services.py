@@ -65,7 +65,7 @@ from .const import (
     VALID_OCCASIONS,
     VALID_OUTFIT_STATUSES,
     VALID_PRECIPITATION_CHANCE,
-    VALID_TEMPERATURE_C,
+    VALID_TEMPERATURE,
     VALID_TIME_OF_DAY,
     WEATHER_CONDITIONS,
 )
@@ -99,7 +99,7 @@ SCHEMA_SUGGEST = vol.All(
         {
             vol.Optional(ATTR_OCCASION): vol.In(VALID_OCCASIONS),
             vol.Optional(ATTR_TIME_OF_DAY): vol.In(VALID_TIME_OF_DAY),
-            vol.Optional(ATTR_TEMPERATURE): VALID_TEMPERATURE_C,
+            vol.Optional(ATTR_TEMPERATURE): VALID_TEMPERATURE,
             vol.Optional(ATTR_WEATHER_CONDITION): vol.In(WEATHER_CONDITIONS),
             vol.Optional(ATTR_PRECIPITATION_CHANCE): VALID_PRECIPITATION_CHANCE,
         },

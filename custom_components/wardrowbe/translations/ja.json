@@ -205,7 +205,7 @@
         },
         "temperature": {
           "name": "気温",
-          "description": "現在地の天気の代わりに、この気温(°C)で天気を上書きします。"
+          "description": "現在地の天気の代わりに、この気温で天気を上書きします。Wardrowbe で設定した温度単位(°C または °F)で入力します。"
         },
         "weather_condition": {
           "name": "天候",

@@ -39,12 +39,20 @@ from .const import (
     API_OUTFIT_SUGGEST,
     API_OUTFIT_SUGGESTIONS,
     API_OUTFITS,
+    API_PREFERENCES,
     API_USER_PROFILE,
     DEFAULT_TIMEOUT,
+    TEMPERATURE_UNIT_CELSIUS,
+    TEMPERATURE_UNIT_FAHRENHEIT,
+    TEMPERATURE_UNITS,
     WEATHER_CONDITION_PRECIPITATION,
+    WEATHER_TEMPERATURE_KEYS,
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+# The display unit changes rarely; re-read it now and then, not every poll.
+_TEMPERATURE_UNIT_TTL = timedelta(minutes=30)
 
 _JWT_REFRESH_LEEWAY = timedelta(hours=1)
 _DEFAULT_JWT_TTL_SECONDS = 6 * 24 * 3600  # 6 days; Wardrowbe defaults to 7
@@ -183,6 +191,8 @@ class WardrowbeClient:
         self._jwt_generation = 0
         self._jwt_refresh_at: datetime | None = None
         self._sync_lock = asyncio.Lock()
+        self._temperature_unit: str | None = None
+        self._temperature_unit_expires: datetime | None = None
 
     @property
     def host(self) -> str:
@@ -245,6 +255,7 @@ class WardrowbeClient:
         data = await self._request("GET", API_OUTFITS, params={"limit": limit})
         outfits = _coerce_list(data)
         _resolve_image_urls(outfits, self._host, self._entry_id, self._sign_path)
+        await self._localize_weather(outfits)
         return outfits
 
     async def async_recent_notifications(self, limit: int = 50) -> list[dict[str, Any]]:
@@ -312,12 +323,64 @@ class WardrowbeClient:
     async def async_learning_insights(self) -> dict[str, Any]:
         return await self._request("GET", API_LEARNING)
 
+    async def async_temperature_unit(self, *, fresh: bool = False) -> str:
+        """The user's Wardrowbe temperature unit (celsius or fahrenheit), cached.
+
+        fresh skips the cache, for converting input: a stale unit there would
+        send the wrong temperature, while output is labelled with its unit.
+        """
+        now = datetime.now(UTC)
+        if (
+            fresh
+            or self._temperature_unit is None
+            or self._temperature_unit_expires is None
+            or now >= self._temperature_unit_expires
+        ):
+            prefs = await self._request("GET", API_PREFERENCES)
+            unit = prefs.get("temperature_unit") if isinstance(prefs, dict) else None
+            self._temperature_unit = (
+                unit if unit in TEMPERATURE_UNITS else TEMPERATURE_UNIT_CELSIUS
+            )
+            self._temperature_unit_expires = now + _TEMPERATURE_UNIT_TTL
+        return self._temperature_unit
+
+    async def _localize_weather(self, outfits: list[Any]) -> None:
+        """Show outfit weather in the user's unit, labelled with it."""
+        targets = [
+            o for o in outfits if isinstance(o, dict) and isinstance(o.get("weather"), dict)
+        ]
+        if not targets:
+            return
+        # The output says which unit it is in, so falling back to the server's
+        # own Celsius is still correct; input conversion can't fall back.
+        try:
+            unit = await self.async_temperature_unit()
+        except WardrowbeApiError as err:
+            _LOGGER.debug("Could not read the temperature unit, using Celsius: %s", err)
+            unit = self._temperature_unit or TEMPERATURE_UNIT_CELSIUS
+        for outfit in targets:
+            _localize_outfit_weather(outfit["weather"], unit)
+
     # ---- authenticated writes ----
 
-    async def async_suggest_outfit(self, payload: dict[str, Any]) -> dict[str, Any]:
+    async def async_suggest_outfit(
+        self, payload: dict[str, Any], *, temperature_unit: str | None = None
+    ) -> dict[str, Any]:
+        """Suggest an outfit; a weather_override temperature is in the user's unit.
+
+        temperature_unit names the override's unit instead, for a caller that
+        knows it (an LLM reading a forecast in the other unit).
+        """
+        override = payload.get("weather_override")
+        if isinstance(override, dict) and override.get("temperature") is not None:
+            unit = temperature_unit or await self.async_temperature_unit(fresh=True)
+            if unit == TEMPERATURE_UNIT_FAHRENHEIT:
+                override = {**override, "temperature": _f_to_c(override["temperature"])}
+                payload = {**payload, "weather_override": override}
         result = await self._request("POST", API_OUTFIT_SUGGEST, json=payload)
         if isinstance(result, dict):
             _resolve_image_urls(result, self._host, self._entry_id, self._sign_path)
+            await self._localize_weather([result])
         return result
 
     async def async_create_outfit_suggestion(
@@ -326,6 +389,7 @@ class WardrowbeClient:
         result = await self._request("POST", API_OUTFIT_SUGGESTIONS, json=payload)
         if isinstance(result, dict):
             _resolve_image_urls(result, self._host, self._entry_id, self._sign_path)
+            await self._localize_weather([result])
         return result
 
     async def async_outfit_action(self, outfit_id: str, action: str) -> dict[str, Any]:
@@ -501,6 +565,26 @@ class WardrowbeClient:
         raise WardrowbeApiError(
             f"{method} {path} → {last_status}: {last_body}", status=last_status
         )
+
+
+def _f_to_c(value: float) -> float:
+    return round((float(value) - 32) * 5 / 9, 1)
+
+
+def _c_to_f(value: float) -> float:
+    return round(float(value) * 9 / 5 + 32, 1)
+
+
+def _localize_outfit_weather(weather: dict[str, Any], unit: str) -> None:
+    """Convert a weather dict's Celsius temperatures in place and label them."""
+    if "temperature_unit" in weather:
+        return  # already converted; converting twice would turn °F into °F again
+    if unit == TEMPERATURE_UNIT_FAHRENHEIT:
+        for key in WEATHER_TEMPERATURE_KEYS:
+            value = weather.get(key)
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                weather[key] = _c_to_f(value)
+    weather["temperature_unit"] = unit
 
 
 def weather_override_payload(

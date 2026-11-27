@@ -205,7 +205,7 @@
         },
         "temperature": {
           "name": "温度",
-          "description": "使用此温度(°C)覆盖所在位置的天气。"
+          "description": "使用此温度覆盖所在位置的天气，单位为 Wardrowbe 中设置的温度单位(°C 或 °F)。"
         },
         "weather_condition": {
           "name": "天气状况",

@@ -54,6 +54,7 @@ API_ITEMS: Final = f"{API_BASE}/items"
 API_ITEM_TYPES: Final = f"{API_BASE}/items/types"
 API_USER_PROFILE: Final = f"{API_BASE}/users/me"
 API_LEARNING: Final = f"{API_BASE}/learning"
+API_PREFERENCES: Final = f"{API_BASE}/users/me/preferences"
 
 # Event entity groups (one entity per group, multiple event_types each)
 EVENT_GROUP_OUTFIT: Final = "outfit"
@@ -207,6 +208,22 @@ VALID_TIME_OF_DAY: Final = (
 # scoring (rain layers above a threshold), so a bare "rainy" needs one.
 WEATHER_CONDITION_PRECIPITATION: Final = {"sunny": 10, "cloudy": 30, "rainy": 80}
 WEATHER_CONDITIONS: Final = tuple(WEATHER_CONDITION_PRECIPITATION)
-# Shared by the suggest_outfit service and LLM tool schemas.
-VALID_TEMPERATURE_C: Final = vol.All(vol.Coerce(float), vol.Range(min=-50, max=60))
+# Wardrowbe stores and computes every temperature in Celsius; its
+# temperature_unit preference only picks the display unit, which the web
+# frontend converts to. The integration does the same for HA.
+TEMPERATURE_UNIT_CELSIUS: Final = "celsius"
+TEMPERATURE_UNIT_FAHRENHEIT: Final = "fahrenheit"
+TEMPERATURE_UNITS: Final = (TEMPERATURE_UNIT_CELSIUS, TEMPERATURE_UNIT_FAHRENHEIT)
+# Keys of an outfit's weather dict that hold a temperature.
+WEATHER_TEMPERATURE_KEYS: Final = (
+    "temperature",
+    "feels_like",
+    "temp_min",
+    "temp_max",
+    "window_min",
+    "window_max",
+)
+# Shared by the suggest_outfit service and LLM tool schemas. Wide enough for
+# either unit; the value is in the user's unit until the client converts it.
+VALID_TEMPERATURE: Final = vol.All(vol.Coerce(float), vol.Range(min=-60, max=140))
 VALID_PRECIPITATION_CHANCE: Final = vol.All(vol.Coerce(int), vol.Range(min=0, max=100))

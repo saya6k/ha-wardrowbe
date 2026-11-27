@@ -205,7 +205,7 @@
         },
         "temperature": {
           "name": "기온",
-          "description": "위치 기반 날씨 대신 이 기온(°C)으로 날씨를 수동 설정합니다."
+          "description": "위치 기반 날씨 대신 이 기온으로 날씨를 수동 설정합니다. Wardrowbe에 설정한 온도 단위(°C 또는 °F)로 입력합니다."
         },
         "weather_condition": {
           "name": "날씨",
