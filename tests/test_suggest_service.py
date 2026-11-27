@@ -191,3 +191,60 @@ async def test_suggest_sends_only_supported_fields(
     mock_client.async_suggest_outfit.assert_awaited_once_with(
         {"occasion": "office", "time_of_day": "morning"}
     )
+
+
+async def _suggest_with(hass: HomeAssistant, entry: MockConfigEntry, **data: object) -> None:
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_SUGGEST_OUTFIT,
+        {ATTR_CONFIG_ENTRY_ID: entry.entry_id, **data},
+        blocking=True,
+        return_response=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("data", "override"),
+    [
+        # A bare condition gets the rain chance Wardrowbe's own UI sends for it.
+        (
+            {"temperature": 12, "weather_condition": "rainy"},
+            {"temperature": 12.0, "condition": "rainy", "precipitation_chance": 80},
+        ),
+        (
+            {"temperature": 25, "weather_condition": "sunny", "precipitation_chance": 40},
+            {"temperature": 25.0, "condition": "sunny", "precipitation_chance": 40},
+        ),
+        ({"temperature": -3}, {"temperature": -3.0}),
+    ],
+)
+async def test_suggest_sends_weather_override(
+    hass: HomeAssistant,
+    dev_mode_entry: MockConfigEntry,
+    mock_client: AsyncMock,
+    data: dict,
+    override: dict,
+) -> None:
+    mock_client.async_suggest_outfit = AsyncMock(return_value={"id": "o1"})
+    await _setup(hass, dev_mode_entry)
+
+    await _suggest_with(hass, dev_mode_entry, **data)
+
+    mock_client.async_suggest_outfit.assert_awaited_once_with({"weather_override": override})
+
+
+@pytest.mark.parametrize(
+    "data", [{"weather_condition": "rainy"}, {"precipitation_chance": 50}]
+)
+async def test_suggest_weather_needs_temperature(
+    hass: HomeAssistant,
+    dev_mode_entry: MockConfigEntry,
+    mock_client: AsyncMock,
+    data: dict,
+) -> None:
+    mock_client.async_suggest_outfit = AsyncMock(return_value={"id": "o1"})
+    await _setup(hass, dev_mode_entry)
+
+    with pytest.raises(vol.Invalid):
+        await _suggest_with(hass, dev_mode_entry, **data)
+    mock_client.async_suggest_outfit.assert_not_called()

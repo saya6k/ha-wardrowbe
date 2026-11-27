@@ -8,12 +8,15 @@ import voluptuous as vol
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 
-from custom_components.wardrowbe.api import WardrowbeApiError
+from custom_components.wardrowbe.api import WardrowbeApiError, weather_override_payload
 from custom_components.wardrowbe.const import (
     ACTIONABLE_OUTFIT_STATUSES,
     EVENT_GROUP_OUTFIT,
     VALID_OCCASIONS,
+    VALID_PRECIPITATION_CHANCE,
+    VALID_TEMPERATURE_C,
     VALID_TIME_OF_DAY,
+    WEATHER_CONDITIONS,
 )
 
 from .base_tool import BaseWardrowbeTool
@@ -32,7 +35,13 @@ class SuggestOutfitTool(BaseWardrowbeTool):
         "or wants an alternative to a previous suggestion. All arguments "
         "are optional hints, not requirements: occasion (e.g. work, "
         "casual, formal) and time_of_day. Wardrowbe always suggests for "
-        "today and takes no free-text hints. Produces a pending outfit; follow up with "
+        "today and takes no free-text hints. By default it uses the live "
+        "weather at the user's location; to plan for other weather (the user "
+        "says it's raining, or a Home Assistant forecast says otherwise), pass "
+        "temperature in °C (convert from °F first), optionally with "
+        f"weather_condition ({', '.join(WEATHER_CONDITIONS)}) and "
+        "precipitation_chance (0-100; defaults from the condition). "
+        "Produces a pending outfit; follow up with "
         "wardrowbe__accept_latest_outfit, wardrowbe__reject_latest_outfit, or "
         "wardrowbe__skip_latest_outfit once the user reacts to it. If it "
         "reports that Wardrowbe's internal AI is disabled, compose the outfit "
@@ -43,6 +52,9 @@ class SuggestOutfitTool(BaseWardrowbeTool):
         {
             vol.Optional("occasion"): vol.In(VALID_OCCASIONS),
             vol.Optional("time_of_day"): vol.In(VALID_TIME_OF_DAY),
+            vol.Optional("temperature"): VALID_TEMPERATURE_C,
+            vol.Optional("weather_condition"): vol.In(WEATHER_CONDITIONS),
+            vol.Optional("precipitation_chance"): VALID_PRECIPITATION_CHANCE,
         }
     )
 
@@ -56,10 +68,22 @@ class SuggestOutfitTool(BaseWardrowbeTool):
         if runtime is None:
             return self.error("Wardrowbe is not loaded.")
         payload: dict[str, Any] = {}
+        args = tool_input.tool_args
         for key in ("occasion", "time_of_day"):
-            val = tool_input.tool_args.get(key)
+            val = args.get(key)
             if val is not None:
                 payload[key] = val
+        weather = weather_override_payload(
+            args.get("temperature"),
+            args.get("weather_condition"),
+            args.get("precipitation_chance"),
+        )
+        if weather is not None:
+            payload["weather_override"] = weather
+        elif args.get("weather_condition") or args.get("precipitation_chance") is not None:
+            return self.error(
+                "Pass temperature (°C) along with weather_condition or precipitation_chance."
+            )
         try:
             outfit = await runtime.client.async_suggest_outfit(payload)
         except WardrowbeApiError as err:

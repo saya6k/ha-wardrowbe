@@ -93,6 +93,13 @@
         "full_day": "終日"
       }
     },
+    "weather_conditions": {
+      "options": {
+        "sunny": "晴れ",
+        "cloudy": "曇り",
+        "rainy": "雨"
+      }
+    },
     "common_colors": {
       "options": {
         "beige": "ベージュ",
@@ -195,6 +202,18 @@
         "time_of_day": {
           "name": "時間帯",
           "description": "コーデを着る時間帯: morning、afternoon、evening、night、full_day。"
+        },
+        "temperature": {
+          "name": "気温",
+          "description": "現在地の天気の代わりに、この気温(°C)で天気を上書きします。"
+        },
+        "weather_condition": {
+          "name": "天候",
+          "description": "天候を上書きします。気温の指定が必要です。"
+        },
+        "precipitation_chance": {
+          "name": "降水確率",
+          "description": "降水確率(%)です。未指定の場合は天候に応じた既定値(雨 80、曇り 30、晴れ 10)を使います。気温の指定が必要です。"
         }
       }
     },

@@ -93,6 +93,13 @@
         "full_day": "全天"
       }
     },
+    "weather_conditions": {
+      "options": {
+        "sunny": "晴天",
+        "cloudy": "多云",
+        "rainy": "雨天"
+      }
+    },
     "common_colors": {
       "options": {
         "beige": "米色",
@@ -195,6 +202,18 @@
         "time_of_day": {
           "name": "时段",
           "description": "穿着时段：morning、afternoon、evening、night 或 full_day。"
+        },
+        "temperature": {
+          "name": "温度",
+          "description": "使用此温度(°C)覆盖所在位置的天气。"
+        },
+        "weather_condition": {
+          "name": "天气状况",
+          "description": "覆盖天气状况。需要同时指定温度。"
+        },
+        "precipitation_chance": {
+          "name": "降雨概率",
+          "description": "降雨概率(%)。留空时使用该天气状况的默认值(雨天 80、多云 30、晴天 10)。需要同时指定温度。"
         }
       }
     },

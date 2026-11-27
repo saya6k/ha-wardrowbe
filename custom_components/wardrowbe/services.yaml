@@ -48,6 +48,32 @@ suggest_outfit:
             - evening
             - night
             - "full_day"
+    temperature:
+      example: 18
+      selector:
+        number:
+          min: -30
+          max: 45
+          step: 1
+          unit_of_measurement: "°C"
+          mode: box
+    weather_condition:
+      selector:
+        select:
+          translation_key: weather_conditions
+          mode: dropdown
+          options:
+            - sunny
+            - cloudy
+            - rainy
+    precipitation_chance:
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 5
+          unit_of_measurement: "%"
+          mode: slider
 
 create_outfit_suggestion:
   fields:

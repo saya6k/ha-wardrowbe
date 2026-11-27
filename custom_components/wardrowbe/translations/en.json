@@ -93,6 +93,13 @@
         "full_day": "Full day"
       }
     },
+    "weather_conditions": {
+      "options": {
+        "sunny": "Clear",
+        "cloudy": "Cloudy",
+        "rainy": "Rain"
+      }
+    },
     "common_colors": {
       "options": {
         "beige": "Beige",
@@ -195,6 +202,18 @@
         "time_of_day": {
           "name": "Time of day",
           "description": "When the outfit will be worn: morning, afternoon, evening, night or full_day."
+        },
+        "temperature": {
+          "name": "Temperature",
+          "description": "Override the weather at your location with this temperature in °C."
+        },
+        "weather_condition": {
+          "name": "Condition",
+          "description": "Override the weather condition. Needs a temperature."
+        },
+        "precipitation_chance": {
+          "name": "Rain chance",
+          "description": "Chance of rain in percent. Defaults to the condition's usual value (rain 80, cloudy 30, clear 10). Needs a temperature."
         }
       }
     },

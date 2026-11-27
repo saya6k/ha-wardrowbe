@@ -25,7 +25,7 @@
 
 모든 서비스는 `config_entry_id`를 받으므로 다중 계정 설정에서 어느 Wardrowbe 계정에 대해 동작할지 선택할 수 있습니다.
 
-- `wardrowbe.suggest_outfit` — 새 아웃핏 추천 생성 (응답 변수로 아웃핏 반환).
+- `wardrowbe.suggest_outfit` — 새 아웃핏 추천 생성 (응답 변수로 아웃핏 반환). 선택 항목 `temperature`(°C), `weather_condition`, `precipitation_chance`로 위치 기반 날씨를 수동 설정할 수 있음.
 - `wardrowbe.create_outfit_suggestion` — 직접 고른 아이템(`item_ids` + `occasion`)으로 아웃핏을 만들어 대기 중인 추천으로 저장. Wardrowbe 내장 AI가 꺼져 있어도 동작 (응답 변수로 아웃핏 반환).
 - `wardrowbe.accept_outfit` / `reject_outfit` / `skip_outfit` — `outfit_id` 선택적; 기본값은 해당 계정의 최신 pending 아웃핏.
 - `wardrowbe.submit_feedback` — 평점, 착용 여부, 메모.

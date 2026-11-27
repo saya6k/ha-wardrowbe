@@ -23,7 +23,7 @@ from homeassistant.core import (
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 
-from .api import WardrowbeApiError, WardrowbeClient
+from .api import WardrowbeApiError, WardrowbeClient, weather_override_payload
 from .const import (
     ACTIONABLE_OUTFIT_STATUSES,
     ATTR_CONFIG_ENTRY_ID,
@@ -36,12 +36,15 @@ from .const import (
     ATTR_NOTES,
     ATTR_OCCASION,
     ATTR_OUTFIT_ID,
+    ATTR_PRECIPITATION_CHANCE,
     ATTR_RATING,
     ATTR_REASON,
     ATTR_REASONING,
     ATTR_SCHEDULED_FOR,
     ATTR_SETTING_ID,
+    ATTR_TEMPERATURE,
     ATTR_TIME_OF_DAY,
+    ATTR_WEATHER_CONDITION,
     ATTR_WORE,
     DOMAIN,
     EVENT_GROUP_OUTFIT,
@@ -61,7 +64,10 @@ from .const import (
     SERVICE_TEST_NOTIFICATION,
     VALID_OCCASIONS,
     VALID_OUTFIT_STATUSES,
+    VALID_PRECIPITATION_CHANCE,
+    VALID_TEMPERATURE_C,
     VALID_TIME_OF_DAY,
+    WEATHER_CONDITIONS,
 )
 from .coordinator import WardrowbeCoordinator
 
@@ -73,15 +79,33 @@ _warned: set[str] = set()
 
 _BASE_SCHEMA = vol.Schema({vol.Required(ATTR_CONFIG_ENTRY_ID): cv.string}, extra=vol.ALLOW_EXTRA)
 
+
+def _require_temperature(data: dict[str, Any]) -> dict[str, Any]:
+    """Wardrowbe's weather override can't be sent without a temperature."""
+    if ATTR_TEMPERATURE not in data and (
+        ATTR_WEATHER_CONDITION in data or ATTR_PRECIPITATION_CHANCE in data
+    ):
+        raise vol.Invalid(
+            f"{ATTR_WEATHER_CONDITION} and {ATTR_PRECIPITATION_CHANCE} need a {ATTR_TEMPERATURE}"
+        )
+    return data
+
+
 # Strict, unlike the other schemas: target_date and notes used to be accepted
 # here but Wardrowbe's SuggestRequest has no such fields, so a call that still
 # passes them must fail instead of being silently ignored.
-SCHEMA_SUGGEST = _BASE_SCHEMA.extend(
-    {
-        vol.Optional(ATTR_OCCASION): vol.In(VALID_OCCASIONS),
-        vol.Optional(ATTR_TIME_OF_DAY): vol.In(VALID_TIME_OF_DAY),
-    },
-    extra=vol.PREVENT_EXTRA,
+SCHEMA_SUGGEST = vol.All(
+    _BASE_SCHEMA.extend(
+        {
+            vol.Optional(ATTR_OCCASION): vol.In(VALID_OCCASIONS),
+            vol.Optional(ATTR_TIME_OF_DAY): vol.In(VALID_TIME_OF_DAY),
+            vol.Optional(ATTR_TEMPERATURE): VALID_TEMPERATURE_C,
+            vol.Optional(ATTR_WEATHER_CONDITION): vol.In(WEATHER_CONDITIONS),
+            vol.Optional(ATTR_PRECIPITATION_CHANCE): VALID_PRECIPITATION_CHANCE,
+        },
+        extra=vol.PREVENT_EXTRA,
+    ),
+    _require_temperature,
 )
 
 SCHEMA_CREATE_SUGGESTION = _BASE_SCHEMA.extend(
@@ -332,6 +356,13 @@ def _make_suggest_handler(hass: HomeAssistant) -> _ServiceHandler:
             payload["occasion"] = occasion
         if (time_of_day := call.data.get(ATTR_TIME_OF_DAY)) is not None:
             payload["time_of_day"] = time_of_day
+        weather = weather_override_payload(
+            call.data.get(ATTR_TEMPERATURE),
+            call.data.get(ATTR_WEATHER_CONDITION),
+            call.data.get(ATTR_PRECIPITATION_CHANCE),
+        )
+        if weather is not None:
+            payload["weather_override"] = weather
         try:
             result = await client.async_suggest_outfit(payload)
         except WardrowbeApiError as err:

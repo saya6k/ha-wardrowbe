@@ -93,6 +93,13 @@
         "full_day": "하루 종일"
       }
     },
+    "weather_conditions": {
+      "options": {
+        "sunny": "맑음",
+        "cloudy": "흐림",
+        "rainy": "비"
+      }
+    },
     "common_colors": {
       "options": {
         "beige": "베이지",
@@ -195,6 +202,18 @@
         "time_of_day": {
           "name": "시간대",
           "description": "옷을 입을 시간대입니다: morning, afternoon, evening, night, full_day."
+        },
+        "temperature": {
+          "name": "기온",
+          "description": "위치 기반 날씨 대신 이 기온(°C)으로 날씨를 수동 설정합니다."
+        },
+        "weather_condition": {
+          "name": "날씨",
+          "description": "날씨 상태를 수동 설정합니다. 기온도 함께 지정해야 합니다."
+        },
+        "precipitation_chance": {
+          "name": "강수 확률",
+          "description": "강수 확률(%)입니다. 비우면 날씨에 맞는 기본값(비 80, 흐림 30, 맑음 10)을 씁니다. 기온도 함께 지정해야 합니다."
         }
       }
     },

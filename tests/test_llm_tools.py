@@ -659,3 +659,23 @@ async def test_get_item_pairings_tool(hass: HomeAssistant) -> None:
     )
     result = await _call_tool(hass, GetItemPairingsTool, runtime, {"item_id": "i1"})
     assert result.error
+
+
+@requires_llm_integration
+async def test_suggest_outfit_tool_weather_override(hass: HomeAssistant) -> None:
+    from custom_components.wardrowbe.llm.outfit_tools import SuggestOutfitTool
+
+    suggest = AsyncMock(return_value={"id": "o1"})
+    runtime = _tool_runtime(async_suggest_outfit=suggest)
+    result = await _call_tool(
+        hass, SuggestOutfitTool, runtime, {"temperature": 9, "weather_condition": "rainy"}
+    )
+    assert not result.error
+    suggest.assert_awaited_once_with(
+        {"weather_override": {"temperature": 9.0, "condition": "rainy", "precipitation_chance": 80}}
+    )
+
+    suggest.reset_mock()
+    result = await _call_tool(hass, SuggestOutfitTool, runtime, {"weather_condition": "rainy"})
+    assert result.error
+    suggest.assert_not_awaited()
