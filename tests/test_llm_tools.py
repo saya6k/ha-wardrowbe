@@ -123,6 +123,7 @@ async def test_hook_returns_tool_set_for_loaded_entry_none_after_unload(
         "wardrowbe__get_most_worn_items",
         "wardrowbe__get_items_to_wash",
         "wardrowbe__log_wash",
+        "wardrowbe__get_body_measurements",
     }
 
     assert await hass.config_entries.async_unload(dev_mode_entry.entry_id)
@@ -149,7 +150,7 @@ async def test_api_instance_end_to_end(
 
     # 12 wardrowbe tools + HA core's own built-in GetDateTimeTool, which
     # async_get_api injects into every API instance.
-    assert len(instance.tools) == 13
+    assert len(instance.tools) == 14
     assert "wardrobe" in instance.api_prompt.lower()
 
 
@@ -292,6 +293,7 @@ async def test_get_wardrobe_items_tool_compacts_items(hass: HomeAssistant) -> No
                 "type": "shirt",
                 "colors": ["navy"],
                 "style": [],
+                "tags": {"size": "M", "fit": "slim", "care_instructions": "cold"},
                 "image_path": "/files/i1.jpg",
                 "ai_raw_response": {"big": "blob"},
             }
@@ -303,7 +305,9 @@ async def test_get_wardrobe_items_tool_compacts_items(hass: HomeAssistant) -> No
     )
     result = await _call_tool(hass, GetWardrobeItemsTool, runtime, {"type": "shirt"})
     assert not result.error
-    assert result.data["items"] == [{"id": "i1", "type": "shirt", "colors": ["navy"]}]
+    assert result.data["items"] == [
+        {"id": "i1", "type": "shirt", "colors": ["navy"], "size": "M", "fit": "slim"}
+    ]
     assert result.data["available_types"] == [{"type": "shirt", "count": 3}]
     list_items.assert_awaited_once_with(
         item_type="shirt", subtype=None, favorite=None, search=None, limit=60
@@ -402,3 +406,32 @@ async def test_get_wardrobe_items_tool_filters(hass: HomeAssistant) -> None:
         search=None,
         limit=100,
     )
+
+
+@requires_llm_integration
+async def test_get_body_measurements_tool(hass: HomeAssistant) -> None:
+    from custom_components.wardrowbe.llm.wardrobe_tools import GetBodyMeasurementsTool
+
+    runtime = _tool_runtime(
+        async_user_profile=AsyncMock(
+            return_value={
+                "id": "u1",
+                "email": "someone@example.com",
+                "body_measurements": {"height": 178, "waist": None, "shoe_size": "270"},
+            }
+        )
+    )
+    result = await _call_tool(hass, GetBodyMeasurementsTool, runtime, {})
+    assert not result.error
+    assert result.data["body_measurements"] == {"height": 178, "shoe_size": "270"}
+    assert "email" not in result.data
+
+    runtime = _tool_runtime(async_user_profile=AsyncMock(return_value={"body_measurements": None}))
+    result = await _call_tool(hass, GetBodyMeasurementsTool, runtime, {})
+    assert not result.error
+    assert result.data["body_measurements"] == {}
+
+    runtime = _tool_runtime(async_user_profile=AsyncMock(side_effect=WardrowbeApiError("boom")))
+    result = await _call_tool(hass, GetBodyMeasurementsTool, runtime, {})
+    assert result.error
+    assert "boom" in result.data["error"]
