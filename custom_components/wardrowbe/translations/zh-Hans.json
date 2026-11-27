@@ -195,14 +195,6 @@
         "time_of_day": {
           "name": "时段",
           "description": "穿着时段：morning、afternoon、evening、night 或 full_day。"
-        },
-        "target_date": {
-          "name": "日期",
-          "description": "要穿搭的日期。默认为今天。"
-        },
-        "notes": {
-          "name": "备注",
-          "description": "自由文本提示，例如“下雨了”或“要见客户”。"
         }
       }
     },

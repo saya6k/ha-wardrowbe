@@ -48,14 +48,6 @@ suggest_outfit:
             - evening
             - night
             - "full_day"
-    target_date:
-      example: "2026-05-08"
-      selector:
-        date:
-    notes:
-      selector:
-        text:
-          multiline: true
 
 create_outfit_suggestion:
   fields:

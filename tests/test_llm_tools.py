@@ -546,3 +546,22 @@ async def test_rate_outfit_tool_needs_feedback_and_an_outfit(hass: HomeAssistant
     result = await _call_tool(hass, RateOutfitTool, runtime, {"rating": 4})
     assert result.error
     feedback.assert_not_awaited()
+
+
+@requires_llm_integration
+async def test_suggest_outfit_tool_takes_only_supported_hints(hass: HomeAssistant) -> None:
+    import voluptuous as vol
+
+    from custom_components.wardrowbe.llm.outfit_tools import SuggestOutfitTool
+
+    for field in ("target_date", "notes"):
+        with pytest.raises(vol.Invalid):
+            SuggestOutfitTool.parameters({field: "x"})
+
+    suggest = AsyncMock(return_value={"id": "o1"})
+    runtime = _tool_runtime(async_suggest_outfit=suggest)
+    result = await _call_tool(
+        hass, SuggestOutfitTool, runtime, {"occasion": "office", "time_of_day": "evening"}
+    )
+    assert not result.error
+    suggest.assert_awaited_once_with({"occasion": "office", "time_of_day": "evening"})

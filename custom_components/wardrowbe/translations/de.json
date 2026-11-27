@@ -195,14 +195,6 @@
         "time_of_day": {
           "name": "Tageszeit",
           "description": "Wann das Outfit getragen wird: morning, afternoon, evening, night oder full_day."
-        },
-        "target_date": {
-          "name": "Datum",
-          "description": "Der Tag, für den das Outfit gedacht ist. Standard ist heute."
-        },
-        "notes": {
-          "name": "Notizen",
-          "description": "Freitext-Hinweise, z. B. „es regnet“ oder „Kundentermin“."
         }
       }
     },

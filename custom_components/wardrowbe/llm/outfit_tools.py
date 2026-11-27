@@ -31,9 +31,8 @@ class SuggestOutfitTool(BaseWardrowbeTool):
         "when the user asks what to wear, wants an outfit for an occasion, "
         "or wants an alternative to a previous suggestion. All arguments "
         "are optional hints, not requirements: occasion (e.g. work, "
-        "casual, formal), time_of_day, target_date (YYYY-MM-DD, defaults "
-        "to today), and free-text notes (e.g. 'it's raining', 'meeting a "
-        "client'). Produces a pending outfit; follow up with "
+        "casual, formal) and time_of_day. Wardrowbe always suggests for "
+        "today and takes no free-text hints. Produces a pending outfit; follow up with "
         "wardrowbe__accept_latest_outfit, wardrowbe__reject_latest_outfit, or "
         "wardrowbe__skip_latest_outfit once the user reacts to it. If it "
         "reports that Wardrowbe's internal AI is disabled, compose the outfit "
@@ -44,8 +43,6 @@ class SuggestOutfitTool(BaseWardrowbeTool):
         {
             vol.Optional("occasion"): vol.In(VALID_OCCASIONS),
             vol.Optional("time_of_day"): vol.In(VALID_TIME_OF_DAY),
-            vol.Optional("target_date"): str,
-            vol.Optional("notes"): str,
         }
     )
 
@@ -59,7 +56,7 @@ class SuggestOutfitTool(BaseWardrowbeTool):
         if runtime is None:
             return self.error("Wardrowbe is not loaded.")
         payload: dict[str, Any] = {}
-        for key in ("occasion", "time_of_day", "target_date", "notes"):
+        for key in ("occasion", "time_of_day"):
             val = tool_input.tool_args.get(key)
             if val is not None:
                 payload[key] = val

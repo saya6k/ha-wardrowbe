@@ -195,14 +195,6 @@
         "time_of_day": {
           "name": "시간대",
           "description": "옷을 입을 시간대입니다: morning, afternoon, evening, night, full_day."
-        },
-        "target_date": {
-          "name": "날짜",
-          "description": "옷을 입을 날입니다. 기본값은 오늘입니다."
-        },
-        "notes": {
-          "name": "메모",
-          "description": "자유 형식 힌트입니다. 예: '비가 와요', '고객 미팅이 있어요'."
         }
       }
     },

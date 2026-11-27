@@ -195,14 +195,6 @@
         "time_of_day": {
           "name": "時間帯",
           "description": "コーデを着る時間帯: morning、afternoon、evening、night、full_day。"
-        },
-        "target_date": {
-          "name": "日付",
-          "description": "着る日です。省略すると今日になります。"
-        },
-        "notes": {
-          "name": "メモ",
-          "description": "自由記述のヒント。例:「雨が降っている」「取引先と会う」。"
         }
       }
     },
