@@ -697,6 +697,3 @@ def _resolve_image_urls(
     for val in payload.values():
         if isinstance(val, (list, dict)):
             _resolve_image_urls(val, host, entry_id, sign_path)
-
-
-

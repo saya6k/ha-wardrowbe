@@ -19,6 +19,7 @@ from homeassistant.core import Context, HomeAssistant
 from homeassistant.helpers import llm as ha_llm
 from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
 from custom_components.wardrowbe.api import WardrowbeApiError
 from custom_components.wardrowbe.const import DOMAIN
@@ -836,3 +837,45 @@ async def test_add_item_tool_reports_a_refused_photo(hass: HomeAssistant) -> Non
     assert result.error
     assert "already in your wardrobe" in result.data["error"]
     runtime.coordinator.async_request_refresh.assert_not_awaited()
+
+
+
+@requires_llm_integration
+async def test_add_item_tool_passes_its_fields_through_to_the_upload(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    from custom_components.wardrowbe.llm.wardrobe_tools import AddWardrobeItemTool
+
+    aioclient_mock.get(
+        "https://img.test/a.png", content=b"png", headers={"Content-Type": "image/png"}
+    )
+    create = AsyncMock(return_value={"id": "n1"})
+    runtime = _write_runtime(async_create_item=create)
+    args = {
+        "image_url": "https://img.test/a.png",
+        "type": "shirt",
+        "name": "Linen shirt",
+        "brand": "Uniqlo",
+        "primary_color": "navy",
+        "notes": "gift",
+        "skip_ai": True,
+    }
+
+    # HA validates tool args against parameters before calling the tool.
+    assert AddWardrobeItemTool.parameters(args) == args
+    result = await _call_tool(hass, AddWardrobeItemTool, runtime, args)
+
+    assert not result.error
+    create.assert_awaited_once_with(
+        b"png",
+        "a.png",
+        "image/png",
+        {
+            "type": "shirt",
+            "name": "Linen shirt",
+            "brand": "Uniqlo",
+            "primary_color": "navy",
+            "notes": "gift",
+            "skip_ai": "true",
+        },
+    )

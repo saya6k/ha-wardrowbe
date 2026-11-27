@@ -743,4 +743,3 @@ class AddWardrobeItemTool(BaseWardrowbeTool):
                 "tagging it."
             ),
         )
-
