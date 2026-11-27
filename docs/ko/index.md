@@ -18,7 +18,7 @@
 |---|---|
 | `sensor` | `total_items`, `items_ready`, `items_processing`, `items_archived`, `total_outfits`, `outfits_this_week`, `outfits_this_month`, `acceptance_rate`, `average_rating`, `total_wears`, `most_worn_item`, `top_color`, `last_outfit_status`, `notifications_last_24h` |
 | `binary_sensor` | `api_healthy`, `has_pending_outfit` |
-| `todo` | `to_wash` (세탁이 필요한 아이템; 완료 처리하면 세탁이 기록됨) |
+| `todo` | `to_wash` (세탁이 필요한 아이템과 세탁 방법; 완료 처리하면 세탁이 기록됨) |
 | `event` | `outfit` (suggested / accepted / rejected / skipped / feedback_submitted), `notification` (sent / failed), `wear` (logged), `wash` (logged) |
 
 ### 서비스
