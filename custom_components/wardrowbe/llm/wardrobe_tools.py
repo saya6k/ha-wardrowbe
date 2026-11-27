@@ -165,6 +165,9 @@ _ITEM_FIELDS: tuple[str, ...] = (
 )
 # User-entered size and AI-tagged fit only exist inside the raw tags dict.
 _ITEM_TAG_FIELDS: tuple[str, ...] = ("size", "fit")
+# Wardrowbe's web UI has no size field, so users keep sizes and the like in
+# the free-text notes; cap them so a long memo can't crowd out the item list.
+_ITEM_NOTES_MAX = 200
 
 
 class GetWardrobeItemsTool(BaseWardrowbeTool):
@@ -175,7 +178,8 @@ class GetWardrobeItemsTool(BaseWardrowbeTool):
     )
     description = (
         "List the user's clean, non-archived wardrobe items with their ids and "
-        "tags (type, colors, style, formality, season, size, fit, wear history). Call this "
+        "tags (type, colors, style, formality, season, size, fit, wear history) and "
+        "the user's free-text notes, where they often keep sizes. Call this "
         "to compose an outfit yourself before wardrowbe__create_outfit_suggestion, "
         "or when the user asks what clothes they have. Optional filters, all "
         "combinable: type and subtype (exact values; the result's available_types "
@@ -281,6 +285,10 @@ def _compact_item(item: dict[str, Any]) -> dict[str, Any]:
     tags = item.get("tags")
     if isinstance(tags, dict):
         out.update({key: tags[key] for key in _ITEM_TAG_FIELDS if tags.get(key) not in (None, "")})
+    notes = item.get("notes")
+    if isinstance(notes, str) and notes.strip():
+        notes = notes.strip()
+        out["notes"] = notes if len(notes) <= _ITEM_NOTES_MAX else notes[:_ITEM_NOTES_MAX] + "…"
     return out
 
 
