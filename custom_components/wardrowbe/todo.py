@@ -108,4 +108,8 @@ def _item_description(raw: dict[str, Any]) -> str | None:
     last = raw.get("last_washed_at")
     if last:
         bits.append(f"last washed {last}")
-    return " · ".join(bits) or None
+    lines = [" · ".join(bits)] if bits else []
+    tags = raw.get("tags")
+    if isinstance(tags, dict) and (care := str(tags.get("care_instructions") or "").strip()):
+        lines.append(care)
+    return "\n".join(lines) or None

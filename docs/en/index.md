@@ -18,7 +18,7 @@ A Home Assistant custom component for [Wardrowbe](https://github.com/Anyesh/ward
 |---|---|
 | `sensor` | `total_items`, `items_ready`, `items_processing`, `items_archived`, `total_outfits`, `outfits_this_week`, `outfits_this_month`, `acceptance_rate`, `average_rating`, `total_wears`, `most_worn_item`, `top_color`, `last_outfit_status`, `notifications_last_24h` |
 | `binary_sensor` | `api_healthy`, `has_pending_outfit` |
-| `todo` | `to_wash` (items that need washing; completing one logs a wash) |
+| `todo` | `to_wash` (items that need washing, with their care instructions; completing one logs a wash) |
 | `event` | `outfit` (suggested / accepted / rejected / skipped / feedback_submitted), `notification` (sent / failed), `wear` (logged), `wash` (logged) |
 
 ### Services
