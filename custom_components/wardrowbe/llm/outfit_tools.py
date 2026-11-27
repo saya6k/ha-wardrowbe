@@ -310,6 +310,7 @@ class _OutfitActionTool(BaseWardrowbeTool):
     """Apply accept/reject/skip to the most recent pending outfit."""
 
     action: str = ""
+    past_tense: str = ""
     parameters = vol.Schema({})
 
     async def async_call(
@@ -331,18 +332,29 @@ class _OutfitActionTool(BaseWardrowbeTool):
         if outfit_id is None:
             return self.error("No pending outfit to act on.")
         try:
-            await runtime.client.async_outfit_action(outfit_id, self.action)
+            result = await runtime.client.async_outfit_action(outfit_id, self.action)
         except WardrowbeApiError as err:
             return self.error(f"{self.action}_outfit failed: {err}")
         await runtime.coordinator.async_request_refresh()
+        # Enough to confirm by name; the whole outfit (with signed image URLs
+        # for every item) would cost the model tokens for nothing.
+        updated = result if isinstance(result, dict) else {}
+        summary = {
+            "id": outfit_id,
+            "name": updated.get("name") or target.get("name"),
+            "occasion": updated.get("occasion") or target.get("occasion"),
+            "status": updated.get("status") or self.past_tense,
+            "items": [
+                item.get("name") or item.get("type")
+                for item in (updated.get("items") or target.get("items") or [])
+                if isinstance(item, dict)
+            ],
+        }
         return self.envelope(
             action=self.action,
             outfit_id=outfit_id,
-            outfit=target,
-            instruction=(
-                f"The outfit was {self.action}ed. Confirm in one short "
-                "sentence."
-            ),
+            outfit={k: v for k, v in summary.items() if v not in (None, [])},
+            instruction=f"The outfit was {self.past_tense}. Confirm in one short sentence.",
         )
 
 
@@ -359,6 +371,7 @@ class AcceptLatestOutfitTool(_OutfitActionTool):
         "it. Fails if there is no pending outfit."
     )
     action = "accept"
+    past_tense = "accepted"
 
 
 class RejectLatestOutfitTool(_OutfitActionTool):
@@ -375,6 +388,7 @@ class RejectLatestOutfitTool(_OutfitActionTool):
         "outfit."
     )
     action = "reject"
+    past_tense = "rejected"
 
 
 class SkipLatestOutfitTool(_OutfitActionTool):
@@ -390,6 +404,7 @@ class SkipLatestOutfitTool(_OutfitActionTool):
         "deciding. Fails if there is no pending outfit."
     )
     action = "skip"
+    past_tense = "skipped"
 
 
 _RATING = vol.All(int, vol.Range(min=1, max=5))

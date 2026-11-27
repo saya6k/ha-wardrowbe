@@ -239,9 +239,22 @@ async def test_outfit_action_tool_acts_on_sent_outfit(hass: HomeAssistant) -> No
     from custom_components.wardrowbe.llm.outfit_tools import AcceptLatestOutfitTool
 
     tool = AcceptLatestOutfitTool(hass, "test-entry")
-    client = SimpleNamespace(async_outfit_action=AsyncMock())
+    client = SimpleNamespace(async_outfit_action=AsyncMock(return_value={"status": "accepted"}))
     coordinator = SimpleNamespace(
-        data=SimpleNamespace(outfits=[{"id": "o1", "status": "sent"}]),
+        data=SimpleNamespace(
+            outfits=[
+                {
+                    "id": "o1",
+                    "status": "sent",
+                    "name": "Navy office",
+                    "items": [
+                        {"name": "Navy shirt", "image_url": "/img?sig=x"},
+                        {"type": "chinos", "image_url": "/img?sig=y"},
+                    ],
+                    "weather": {"temperature": 5},
+                }
+            ]
+        ),
         async_request_refresh=AsyncMock(),
     )
     runtime = SimpleNamespace(client=client, coordinator=coordinator)
@@ -252,6 +265,41 @@ async def test_outfit_action_tool_acts_on_sent_outfit(hass: HomeAssistant) -> No
         )
     assert not result.error
     client.async_outfit_action.assert_awaited_once_with("o1", "accept")
+    assert result.data["outfit"] == {
+        "id": "o1",
+        "name": "Navy office",
+        "status": "accepted",
+        "items": ["Navy shirt", "chinos"],
+    }
+    assert "was accepted." in result.data["instruction"]
+
+
+@pytest.mark.parametrize(
+    ("cls_name", "past"),
+    [
+        ("AcceptLatestOutfitTool", "accepted"),
+        ("RejectLatestOutfitTool", "rejected"),
+        ("SkipLatestOutfitTool", "skipped"),
+    ],
+)
+async def test_outfit_action_tools_word_the_confirmation(
+    hass: HomeAssistant, cls_name: str, past: str
+) -> None:
+    from types import SimpleNamespace
+
+    from custom_components.wardrowbe.llm import outfit_tools
+
+    cls = getattr(outfit_tools, cls_name)
+    runtime = SimpleNamespace(
+        client=SimpleNamespace(async_outfit_action=AsyncMock(return_value=None)),
+        coordinator=SimpleNamespace(
+            data=SimpleNamespace(outfits=[{"id": "o1", "status": "pending"}]),
+            async_request_refresh=AsyncMock(),
+        ),
+    )
+    result = await _call_tool(hass, cls, runtime, {})
+    assert f"was {past}." in result.data["instruction"]
+    assert result.data["outfit"] == {"id": "o1", "status": past}
 
 
 def _tool_runtime(**client_methods: AsyncMock) -> object:
