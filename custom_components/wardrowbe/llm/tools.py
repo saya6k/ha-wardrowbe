@@ -12,6 +12,7 @@ from .outfit_tools import (
     CreateOutfitSuggestionTool,
     GetLatestOutfitTool,
     GetRecentOutfitsTool,
+    RateOutfitTool,
     RejectLatestOutfitTool,
     SkipLatestOutfitTool,
     SuggestOutfitTool,
@@ -23,6 +24,7 @@ from .wardrobe_tools import (
     GetWardrobeItemsTool,
     GetWardrobeSummaryTool,
     LogWashTool,
+    LogWearTool,
 )
 
 ToolFactory = Callable[[HomeAssistant, str], llm.Tool]
@@ -49,4 +51,6 @@ TOOL_FACTORIES: list[ToolFactory] = [
     _factory(GetItemsToWashTool),
     _factory(LogWashTool),
     _factory(GetBodyMeasurementsTool),
+    _factory(LogWearTool),
+    _factory(RateOutfitTool),
 ]

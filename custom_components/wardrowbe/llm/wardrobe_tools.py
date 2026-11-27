@@ -11,9 +11,11 @@ from homeassistant.helpers import llm
 from custom_components.wardrowbe.api import WardrowbeApiError
 from custom_components.wardrowbe.const import (
     EVENT_GROUP_WASH,
+    EVENT_GROUP_WEAR,
     ITEM_COLORS,
     ITEM_FORMALITY,
     ITEM_SEASONS,
+    VALID_OCCASIONS,
 )
 
 from .base_tool import BaseWardrowbeTool
@@ -455,3 +457,90 @@ class GetBodyMeasurementsTool(BaseWardrowbeTool):
             raw = {}
         measurements = {key: value for key, value in raw.items() if value not in (None, "")}
         return self.envelope(body_measurements=measurements)
+
+
+class LogWearTool(BaseWardrowbeTool):
+    name = "wardrowbe__log_wear"
+    title = "Log wear"
+    annotations = llm.ToolAnnotations(
+        read_only=False, destructive=True, idempotent=False, open_world=True
+    )
+    description = (
+        "Record that the user wore a wardrobe item, which updates its wear "
+        "count and wash tracking. Call this when the user says they wore or "
+        "are wearing a specific item. Pass item_id (preferred, e.g. from "
+        "wardrowbe__get_wardrobe_items) or item_name to search all items by "
+        "name. Optional worn_at (YYYY-MM-DD, default today in the user's "
+        f"timezone), occasion ({', '.join(VALID_OCCASIONS)}) and notes. For a "
+        "whole outfit the user wore, use wardrowbe__rate_outfit with worn "
+        "true instead."
+    )
+    parameters = vol.Schema(
+        {
+            vol.Optional("item_id"): str,
+            vol.Optional("item_name"): str,
+            vol.Optional("worn_at"): vol.Match(r"^\d{4}-\d{2}-\d{2}$"),
+            vol.Optional("occasion"): vol.In(VALID_OCCASIONS),
+            vol.Optional("notes"): str,
+        }
+    )
+
+    async def async_call(
+        self,
+        hass: HomeAssistant,
+        tool_input: llm.ToolInput,
+        llm_context: llm.LLMContext,
+    ) -> llm.ToolResult:
+        runtime = self.runtime
+        if runtime is None:
+            return self.error("Wardrowbe is not loaded.")
+        args = tool_input.tool_args
+        item_id = args.get("item_id")
+        try:
+            if not item_id:
+                name = (args.get("item_name") or "").strip()
+                if not name:
+                    return self.error("Provide item_id or item_name.")
+                candidates = await runtime.client.async_list_items(
+                    search=name, include_needs_wash=True, limit=20
+                )
+                match = _pick_by_name(candidates, name)
+                if isinstance(match, str):
+                    return self.error(match)
+                item_id = str(match["id"])
+            payload = {
+                key: args[key]
+                for key in ("worn_at", "occasion", "notes")
+                if args.get(key) not in (None, "")
+            }
+            result = await runtime.client.async_log_wear(str(item_id), payload)
+        except WardrowbeApiError as err:
+            return self.error(f"log_wear failed: {err}")
+        event: dict[str, Any] = {"item_id": str(item_id)}
+        if isinstance(result, dict):
+            for key in ("name", "wear_count", "last_worn_at", "wears_since_wash"):
+                if key in result:
+                    event[key] = result[key]
+        runtime.coordinator.record_local_event(EVENT_GROUP_WEAR, "logged", event)
+        await runtime.coordinator.async_request_refresh()
+        return self.envelope(
+            item_id=str(item_id),
+            item_name=event.get("name"),
+            instruction="The wear was logged. Confirm in one short sentence.",
+        )
+
+
+def _pick_by_name(candidates: list[dict[str, Any]], name: str) -> dict[str, Any] | str:
+    """The single item the name means, or an error message for the model."""
+    items = [c for c in candidates if isinstance(c, dict) and c.get("id") is not None]
+    wanted = name.casefold()
+    exact = [c for c in items if str(c.get("name") or "").strip().casefold() == wanted]
+    if len(exact) == 1:
+        return exact[0]
+    if len(items) == 1:
+        return items[0]
+    if not items:
+        return f"No item matching '{name}'."
+    # Guessing here would log a wear on the wrong garment.
+    names = ", ".join(f"{c.get('name') or c.get('type')} ({c['id']})" for c in items[:5])
+    return f"Several items match '{name}': {names}. Ask which one, then pass its item_id."
