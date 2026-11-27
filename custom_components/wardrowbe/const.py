@@ -51,6 +51,7 @@ API_NOTIFICATIONS_SETTINGS: Final = f"{API_BASE}/notifications/settings"
 API_ITEMS: Final = f"{API_BASE}/items"
 API_ITEM_TYPES: Final = f"{API_BASE}/items/types"
 API_USER_PROFILE: Final = f"{API_BASE}/users/me"
+API_LEARNING: Final = f"{API_BASE}/learning"
 
 # Event entity groups (one entity per group, multiple event_types each)
 EVENT_GROUP_OUTFIT: Final = "outfit"
