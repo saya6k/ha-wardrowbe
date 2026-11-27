@@ -11,6 +11,7 @@ from homeassistant.helpers import llm
 from custom_components.wardrowbe.api import WardrowbeApiError
 from custom_components.wardrowbe.const import (
     ACTIONABLE_OUTFIT_STATUSES,
+    EVENT_GROUP_OUTFIT,
     VALID_OCCASIONS,
     VALID_TIME_OF_DAY,
 )
@@ -358,3 +359,68 @@ class SkipLatestOutfitTool(_OutfitActionTool):
         "deciding. Fails if there is no pending outfit."
     )
     action = "skip"
+
+
+_RATING = vol.All(int, vol.Range(min=1, max=5))
+_FEEDBACK_KEYS = ("rating", "comfort_rating", "style_rating", "comment", "worn")
+
+
+class RateOutfitTool(BaseWardrowbeTool):
+    name = "wardrowbe__rate_outfit"
+    title = "Rate outfit"
+    annotations = llm.ToolAnnotations(
+        read_only=False, destructive=True, idempotent=False, open_world=True
+    )
+    description = (
+        "Save the user's feedback on an outfit so Wardrowbe learns their taste: "
+        "rating, comfort_rating and style_rating (each 1-5), a short comment, "
+        "and worn (true once they actually wore it). Pass at least one of "
+        "these. Targets outfit_id (e.g. from wardrowbe__get_recent_outfits) or, "
+        "if omitted, the most recent outfit. Setting worn true also logs a "
+        "wear for every item in the outfit, so do not call "
+        "wardrowbe__log_wear for those items as well. Use the accept/reject "
+        "tools, not this one, to answer a pending suggestion."
+    )
+    parameters = vol.Schema(
+        {
+            vol.Optional("outfit_id"): str,
+            vol.Optional("rating"): _RATING,
+            vol.Optional("comfort_rating"): _RATING,
+            vol.Optional("style_rating"): _RATING,
+            vol.Optional("comment"): vol.All(str, vol.Length(max=1000)),
+            vol.Optional("worn"): bool,
+        }
+    )
+
+    async def async_call(
+        self,
+        hass: HomeAssistant,
+        tool_input: llm.ToolInput,
+        llm_context: llm.LLMContext,
+    ) -> llm.ToolResult:
+        runtime = self.runtime
+        if runtime is None or runtime.coordinator.data is None:
+            return self.error("Wardrowbe data is not ready.")
+        args = tool_input.tool_args
+        payload = {key: args[key] for key in _FEEDBACK_KEYS if args.get(key) not in (None, "")}
+        if not payload:
+            return self.error("Provide a rating, comment or worn.")
+        outfit_id = args.get("outfit_id")
+        if not outfit_id:
+            outfits = runtime.coordinator.data.outfits
+            if not outfits or outfits[0].get("id") is None:
+                return self.error("No outfit to rate.")
+            outfit_id = str(outfits[0]["id"])
+        try:
+            await runtime.client.async_post_outfit_feedback(outfit_id, payload)
+        except WardrowbeApiError as err:
+            return self.error(f"rate_outfit failed: {err}")
+        runtime.coordinator.record_local_event(
+            EVENT_GROUP_OUTFIT, "feedback_submitted", {"outfit_id": outfit_id, **payload}
+        )
+        await runtime.coordinator.async_request_refresh()
+        return self.envelope(
+            outfit_id=outfit_id,
+            feedback=payload,
+            instruction="The feedback was saved. Confirm in one short sentence.",
+        )

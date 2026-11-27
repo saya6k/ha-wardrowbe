@@ -124,6 +124,8 @@ async def test_hook_returns_tool_set_for_loaded_entry_none_after_unload(
         "wardrowbe__get_items_to_wash",
         "wardrowbe__log_wash",
         "wardrowbe__get_body_measurements",
+        "wardrowbe__log_wear",
+        "wardrowbe__rate_outfit",
     }
 
     assert await hass.config_entries.async_unload(dev_mode_entry.entry_id)
@@ -150,7 +152,7 @@ async def test_api_instance_end_to_end(
 
     # 12 wardrowbe tools + HA core's own built-in GetDateTimeTool, which
     # async_get_api injects into every API instance.
-    assert len(instance.tools) == 14
+    assert len(instance.tools) == 16
     assert "wardrobe" in instance.api_prompt.lower()
 
 
@@ -435,3 +437,112 @@ async def test_get_body_measurements_tool(hass: HomeAssistant) -> None:
     result = await _call_tool(hass, GetBodyMeasurementsTool, runtime, {})
     assert result.error
     assert "boom" in result.data["error"]
+
+
+def _write_runtime(outfits: list[dict] | None = None, **client_methods: AsyncMock) -> object:
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+
+    return SimpleNamespace(
+        client=SimpleNamespace(**client_methods),
+        coordinator=SimpleNamespace(
+            data=SimpleNamespace(outfits=outfits or []),
+            async_request_refresh=AsyncMock(),
+            record_local_event=MagicMock(),
+        ),
+    )
+
+
+@requires_llm_integration
+async def test_log_wear_tool_by_id_sends_server_field_names(hass: HomeAssistant) -> None:
+    from custom_components.wardrowbe.llm.wardrobe_tools import LogWearTool
+
+    log_wear = AsyncMock(return_value={"name": "Navy shirt", "wear_count": 4})
+    runtime = _write_runtime(async_log_wear=log_wear)
+    result = await _call_tool(
+        hass, LogWearTool, runtime, {"item_id": "i1", "worn_at": "2026-11-26", "occasion": "office"}
+    )
+    assert not result.error
+    log_wear.assert_awaited_once_with("i1", {"worn_at": "2026-11-26", "occasion": "office"})
+    runtime.coordinator.record_local_event.assert_called_once_with(
+        "wear", "logged", {"item_id": "i1", "name": "Navy shirt", "wear_count": 4}
+    )
+
+
+@requires_llm_integration
+async def test_log_wear_tool_resolves_item_name(hass: HomeAssistant) -> None:
+    from custom_components.wardrowbe.llm.wardrobe_tools import LogWearTool
+
+    log_wear = AsyncMock(return_value={})
+    list_items = AsyncMock(
+        return_value=[
+            {"id": "i1", "name": "Navy shirt"},
+            {"id": "i2", "name": "Navy shirt dress"},
+        ]
+    )
+    runtime = _write_runtime(async_log_wear=log_wear, async_list_items=list_items)
+    result = await _call_tool(hass, LogWearTool, runtime, {"item_name": "navy shirt"})
+    assert not result.error
+    log_wear.assert_awaited_once_with("i1", {})
+    list_items.assert_awaited_once_with(search="navy shirt", include_needs_wash=True, limit=20)
+
+
+@requires_llm_integration
+async def test_log_wear_tool_refuses_to_guess_between_items(hass: HomeAssistant) -> None:
+    from custom_components.wardrowbe.llm.wardrobe_tools import LogWearTool
+
+    log_wear = AsyncMock()
+    list_items = AsyncMock(
+        return_value=[{"id": "i1", "name": "Navy shirt"}, {"id": "i2", "name": "Navy tee"}]
+    )
+    runtime = _write_runtime(async_log_wear=log_wear, async_list_items=list_items)
+    result = await _call_tool(hass, LogWearTool, runtime, {"item_name": "navy"})
+    assert result.error
+    assert "i1" in result.data["error"] and "i2" in result.data["error"]
+    log_wear.assert_not_awaited()
+
+    list_items.return_value = []
+    result = await _call_tool(hass, LogWearTool, runtime, {"item_name": "navy"})
+    assert result.error
+    log_wear.assert_not_awaited()
+
+
+@requires_llm_integration
+async def test_rate_outfit_tool_targets_latest_or_given_outfit(hass: HomeAssistant) -> None:
+    from custom_components.wardrowbe.llm.outfit_tools import RateOutfitTool
+
+    feedback = AsyncMock(return_value={})
+    runtime = _write_runtime(
+        outfits=[{"id": "o2", "status": "accepted"}, {"id": "o1"}],
+        async_post_outfit_feedback=feedback,
+    )
+    result = await _call_tool(
+        hass, RateOutfitTool, runtime, {"rating": 2, "comment": "too warm", "worn": True}
+    )
+    assert not result.error
+    feedback.assert_awaited_once_with("o2", {"rating": 2, "comment": "too warm", "worn": True})
+    runtime.coordinator.record_local_event.assert_called_once_with(
+        "outfit",
+        "feedback_submitted",
+        {"outfit_id": "o2", "rating": 2, "comment": "too warm", "worn": True},
+    )
+
+    feedback.reset_mock()
+    result = await _call_tool(hass, RateOutfitTool, runtime, {"outfit_id": "o1", "style_rating": 5})
+    assert not result.error
+    feedback.assert_awaited_once_with("o1", {"style_rating": 5})
+
+
+@requires_llm_integration
+async def test_rate_outfit_tool_needs_feedback_and_an_outfit(hass: HomeAssistant) -> None:
+    from custom_components.wardrowbe.llm.outfit_tools import RateOutfitTool
+
+    feedback = AsyncMock()
+    runtime = _write_runtime(outfits=[{"id": "o1"}], async_post_outfit_feedback=feedback)
+    result = await _call_tool(hass, RateOutfitTool, runtime, {})
+    assert result.error
+
+    runtime = _write_runtime(async_post_outfit_feedback=feedback)
+    result = await _call_tool(hass, RateOutfitTool, runtime, {"rating": 4})
+    assert result.error
+    feedback.assert_not_awaited()
