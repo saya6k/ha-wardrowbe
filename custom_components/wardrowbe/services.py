@@ -41,7 +41,6 @@ from .const import (
     ATTR_REASONING,
     ATTR_SCHEDULED_FOR,
     ATTR_SETTING_ID,
-    ATTR_TARGET_DATE,
     ATTR_TIME_OF_DAY,
     ATTR_WORE,
     DOMAIN,
@@ -74,13 +73,15 @@ _warned: set[str] = set()
 
 _BASE_SCHEMA = vol.Schema({vol.Required(ATTR_CONFIG_ENTRY_ID): cv.string}, extra=vol.ALLOW_EXTRA)
 
+# Strict, unlike the other schemas: target_date and notes used to be accepted
+# here but Wardrowbe's SuggestRequest has no such fields, so a call that still
+# passes them must fail instead of being silently ignored.
 SCHEMA_SUGGEST = _BASE_SCHEMA.extend(
     {
         vol.Optional(ATTR_OCCASION): vol.In(VALID_OCCASIONS),
         vol.Optional(ATTR_TIME_OF_DAY): vol.In(VALID_TIME_OF_DAY),
-        vol.Optional(ATTR_TARGET_DATE): cv.date,
-        vol.Optional(ATTR_NOTES): cv.string,
-    }
+    },
+    extra=vol.PREVENT_EXTRA,
 )
 
 SCHEMA_CREATE_SUGGESTION = _BASE_SCHEMA.extend(
@@ -331,10 +332,6 @@ def _make_suggest_handler(hass: HomeAssistant) -> _ServiceHandler:
             payload["occasion"] = occasion
         if (time_of_day := call.data.get(ATTR_TIME_OF_DAY)) is not None:
             payload["time_of_day"] = time_of_day
-        if (target := call.data.get(ATTR_TARGET_DATE)) is not None:
-            payload["target_date"] = target.isoformat()
-        if (notes := call.data.get(ATTR_NOTES)) is not None:
-            payload["notes"] = notes
         try:
             result = await client.async_suggest_outfit(payload)
         except WardrowbeApiError as err:

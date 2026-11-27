@@ -195,14 +195,6 @@
         "time_of_day": {
           "name": "Time of day",
           "description": "When the outfit will be worn: morning, afternoon, evening, night or full_day."
-        },
-        "target_date": {
-          "name": "Date",
-          "description": "The day to dress for. Defaults to today."
-        },
-        "notes": {
-          "name": "Notes",
-          "description": "Free-text hints, e.g. 'it's raining' or 'meeting a client'."
         }
       }
     },

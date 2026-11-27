@@ -195,14 +195,6 @@
         "time_of_day": {
           "name": "Momento della giornata",
           "description": "Quando verrà indossato l'outfit: morning, afternoon, evening, night o full_day."
-        },
-        "target_date": {
-          "name": "Data",
-          "description": "Il giorno per cui vestirsi. Predefinito: oggi."
-        },
-        "notes": {
-          "name": "Note",
-          "description": "Suggerimenti liberi, ad es. \"piove\" o \"incontro con un cliente\"."
         }
       }
     },

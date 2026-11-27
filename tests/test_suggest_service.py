@@ -11,6 +11,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
+import voluptuous as vol
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -144,3 +145,49 @@ async def test_unknown_entry_is_swallowed(
     await _call(hass, "does-not-exist")
 
     mock_client.async_suggest_outfit.assert_not_called()
+
+
+@pytest.mark.parametrize("field", ["target_date", "notes"])
+async def test_suggest_rejects_fields_wardrowbe_does_not_take(
+    hass: HomeAssistant,
+    dev_mode_entry: MockConfigEntry,
+    mock_client: AsyncMock,
+    field: str,
+) -> None:
+    """These used to be accepted and then silently dropped by the server."""
+    mock_client.async_suggest_outfit = AsyncMock(return_value={"id": "o1"})
+    await _setup(hass, dev_mode_entry)
+
+    with pytest.raises(vol.Invalid):
+        await hass.services.async_call(
+            DOMAIN,
+            SERVICE_SUGGEST_OUTFIT,
+            {ATTR_CONFIG_ENTRY_ID: dev_mode_entry.entry_id, field: "2026-11-28"},
+            blocking=True,
+        )
+    mock_client.async_suggest_outfit.assert_not_called()
+
+
+async def test_suggest_sends_only_supported_fields(
+    hass: HomeAssistant,
+    dev_mode_entry: MockConfigEntry,
+    mock_client: AsyncMock,
+) -> None:
+    mock_client.async_suggest_outfit = AsyncMock(return_value={"id": "o1"})
+    await _setup(hass, dev_mode_entry)
+
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_SUGGEST_OUTFIT,
+        {
+            ATTR_CONFIG_ENTRY_ID: dev_mode_entry.entry_id,
+            "occasion": "office",
+            "time_of_day": "morning",
+        },
+        blocking=True,
+        return_response=True,
+    )
+
+    mock_client.async_suggest_outfit.assert_awaited_once_with(
+        {"occasion": "office", "time_of_day": "morning"}
+    )

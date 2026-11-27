@@ -130,7 +130,6 @@ action:
     data:
       config_entry_id: <your-entry-id>
       occasion: work
-      target_date: "{{ now().date() }}"
     response_variable: suggestion
   - service: notify.mobile_app_phone
     data:

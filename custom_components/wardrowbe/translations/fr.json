@@ -195,14 +195,6 @@
         "time_of_day": {
           "name": "Moment de la journée",
           "description": "Quand la tenue sera portée : morning, afternoon, evening, night ou full_day."
-        },
-        "target_date": {
-          "name": "Date",
-          "description": "Le jour pour lequel s'habiller. Par défaut, aujourd'hui."
-        },
-        "notes": {
-          "name": "Notes",
-          "description": "Indications libres, par ex. « il pleut » ou « rendez-vous client »."
         }
       }
     },
