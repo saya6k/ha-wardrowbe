@@ -388,12 +388,13 @@ def _make_feedback_handler(hass: HomeAssistant) -> _ServiceHandler:
     async def _handle(call: ServiceCall) -> ServiceResponse:
         client, coordinator = _resolve_runtime(hass, call)
         outfit_id = call.data[ATTR_OUTFIT_ID]
+        # Keys follow Wardrowbe's FeedbackRequest; it drops unknown ones silently.
         payload = {
             k: v
             for k, v in {
                 "rating": call.data.get(ATTR_RATING),
-                "wore": call.data.get(ATTR_WORE),
-                "notes": call.data.get(ATTR_NOTES),
+                "worn": call.data.get(ATTR_WORE),
+                "comment": call.data.get(ATTR_NOTES),
             }.items()
             if v is not None
         }
@@ -418,7 +419,7 @@ def _make_log_wear_handler(hass: HomeAssistant) -> _ServiceHandler:
         client, coordinator = _resolve_runtime(hass, call)
         payload: dict[str, Any] = {}
         if (date := call.data.get(ATTR_DATE)) is not None:
-            payload["date"] = date.isoformat()
+            payload["worn_at"] = date.isoformat()
         item_id = call.data[ATTR_ITEM_ID]
         try:
             result = await client.async_log_wear(item_id, payload)
