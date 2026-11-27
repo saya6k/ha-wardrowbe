@@ -544,3 +544,71 @@ def _pick_by_name(candidates: list[dict[str, Any]], name: str) -> dict[str, Any]
     # Guessing here would log a wear on the wrong garment.
     names = ", ".join(f"{c.get('name') or c.get('type')} ({c['id']})" for c in items[:5])
     return f"Several items match '{name}': {names}. Ask which one, then pass its item_id."
+
+
+_PAIR_ITEM_FIELDS = ("id", "name", "type", "primary_color")
+_INSIGHT_FIELDS = ("title", "description", "category", "confidence")
+
+
+class GetStyleInsightsTool(BaseWardrowbeTool):
+    name = "wardrowbe__get_style_insights"
+    title = "Get style insights"
+    annotations = llm.ToolAnnotations(
+        read_only=True, destructive=False, idempotent=True, open_world=False
+    )
+    description = (
+        "Return what Wardrowbe has learned from the user's outfit feedback: "
+        "acceptance rate and average ratings, liked and disliked colors and "
+        "styles (score -1 to 1), per-occasion and per-weather patterns, the "
+        "item pairs that work best together, written style insights, and "
+        "suggested colors to add to their favorites or avoid list. Call this "
+        "when the user asks about their taste, style habits, or which of "
+        "their clothes go well together. has_learning_data false means there "
+        "is not enough rated feedback yet."
+    )
+    parameters = vol.Schema({})
+
+    async def async_call(
+        self,
+        hass: HomeAssistant,
+        tool_input: llm.ToolInput,
+        llm_context: llm.LLMContext,
+    ) -> llm.ToolResult:
+        runtime = self.runtime
+        if runtime is None:
+            return self.error("Wardrowbe is not loaded.")
+        try:
+            data = await runtime.client.async_learning_insights()
+        except WardrowbeApiError as err:
+            return self.error(f"get_style_insights failed: {err}")
+        if not isinstance(data, dict):
+            data = {}
+        # Thumbnail paths and translation keys only cost the model tokens.
+        best_pairs = [
+            {
+                "item1": _pick(pair.get("item1"), _PAIR_ITEM_FIELDS),
+                "item2": _pick(pair.get("item2"), _PAIR_ITEM_FIELDS),
+                "compatibility_score": pair.get("compatibility_score"),
+                "times_paired": pair.get("times_paired"),
+                "times_accepted": pair.get("times_accepted"),
+            }
+            for pair in data.get("best_pairs") or []
+            if isinstance(pair, dict)
+        ]
+        insights = [
+            _pick(insight, _INSIGHT_FIELDS)
+            for insight in data.get("insights") or []
+            if isinstance(insight, dict)
+        ]
+        return self.envelope(
+            profile=data.get("profile") or {},
+            best_pairs=best_pairs,
+            insights=insights,
+            preference_suggestions=data.get("preference_suggestions") or {},
+        )
+
+
+def _pick(source: Any, keys: tuple[str, ...]) -> dict[str, Any]:
+    if not isinstance(source, dict):
+        return {}
+    return {key: source[key] for key in keys if source.get(key) is not None}

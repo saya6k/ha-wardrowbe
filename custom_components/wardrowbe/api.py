@@ -33,6 +33,7 @@ from .const import (
     API_HEALTH,
     API_ITEM_TYPES,
     API_ITEMS,
+    API_LEARNING,
     API_NOTIFICATIONS_HISTORY,
     API_NOTIFICATIONS_SETTINGS,
     API_OUTFIT_SUGGEST,
@@ -297,6 +298,9 @@ class WardrowbeClient:
 
     async def async_user_profile(self) -> dict[str, Any]:
         return await self._request("GET", API_USER_PROFILE)
+
+    async def async_learning_insights(self) -> dict[str, Any]:
+        return await self._request("GET", API_LEARNING)
 
     # ---- authenticated writes ----
 

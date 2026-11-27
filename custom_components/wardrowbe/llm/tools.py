@@ -21,6 +21,7 @@ from .wardrobe_tools import (
     GetBodyMeasurementsTool,
     GetItemsToWashTool,
     GetMostWornItemsTool,
+    GetStyleInsightsTool,
     GetWardrobeItemsTool,
     GetWardrobeSummaryTool,
     LogWashTool,
@@ -53,4 +54,5 @@ TOOL_FACTORIES: list[ToolFactory] = [
     _factory(GetBodyMeasurementsTool),
     _factory(LogWearTool),
     _factory(RateOutfitTool),
+    _factory(GetStyleInsightsTool),
 ]

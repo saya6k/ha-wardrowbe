@@ -126,6 +126,7 @@ async def test_hook_returns_tool_set_for_loaded_entry_none_after_unload(
         "wardrowbe__get_body_measurements",
         "wardrowbe__log_wear",
         "wardrowbe__rate_outfit",
+        "wardrowbe__get_style_insights",
     }
 
     assert await hass.config_entries.async_unload(dev_mode_entry.entry_id)
@@ -152,7 +153,7 @@ async def test_api_instance_end_to_end(
 
     # 12 wardrowbe tools + HA core's own built-in GetDateTimeTool, which
     # async_get_api injects into every API instance.
-    assert len(instance.tools) == 16
+    assert len(instance.tools) == 17
     assert "wardrobe" in instance.api_prompt.lower()
 
 
@@ -565,3 +566,66 @@ async def test_suggest_outfit_tool_takes_only_supported_hints(hass: HomeAssistan
     )
     assert not result.error
     suggest.assert_awaited_once_with({"occasion": "office", "time_of_day": "evening"})
+
+
+@requires_llm_integration
+async def test_get_style_insights_tool_trims_payload(hass: HomeAssistant) -> None:
+    from custom_components.wardrowbe.llm.wardrobe_tools import GetStyleInsightsTool
+
+    item = {"id": "i1", "name": "Navy shirt", "type": "shirt", "thumbnail_path": "/t.jpg"}
+    profile = {"has_learning_data": True, "feedback_count": 12, "average_rating": 4.1}
+    runtime = _tool_runtime(
+        async_learning_insights=AsyncMock(
+            return_value={
+                "profile": profile,
+                "best_pairs": [
+                    {
+                        "item1": item,
+                        "item2": {"id": "i2", "name": "Chinos", "thumbnail_url": "x"},
+                        "compatibility_score": 0.8,
+                        "times_paired": 5,
+                        "times_accepted": 4,
+                    }
+                ],
+                "insights": [
+                    {
+                        "id": "n1",
+                        "title": "Blue works",
+                        "description": "You accept blue outfits more often.",
+                        "category": "color",
+                        "confidence": 0.7,
+                        "message_key": "insight.color",
+                        "message_params": {},
+                    }
+                ],
+                "preference_suggestions": {"updated": False},
+            }
+        )
+    )
+    result = await _call_tool(hass, GetStyleInsightsTool, runtime, {})
+    assert not result.error
+    assert result.data["profile"] == profile
+    assert result.data["best_pairs"] == [
+        {
+            "item1": {"id": "i1", "name": "Navy shirt", "type": "shirt"},
+            "item2": {"id": "i2", "name": "Chinos"},
+            "compatibility_score": 0.8,
+            "times_paired": 5,
+            "times_accepted": 4,
+        }
+    ]
+    assert result.data["insights"] == [
+        {
+            "title": "Blue works",
+            "description": "You accept blue outfits more often.",
+            "category": "color",
+            "confidence": 0.7,
+        }
+    ]
+    assert result.data["preference_suggestions"] == {"updated": False}
+
+    runtime = _tool_runtime(
+        async_learning_insights=AsyncMock(side_effect=WardrowbeApiError("boom"))
+    )
+    result = await _call_tool(hass, GetStyleInsightsTool, runtime, {})
+    assert result.error
