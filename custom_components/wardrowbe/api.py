@@ -296,6 +296,15 @@ class WardrowbeClient:
         """The user's item types with counts, e.g. [{"type": "shirt", "count": 12}]."""
         return _coerce_list(await self._request("GET", API_ITEM_TYPES))
 
+    async def async_item_pair_suggestions(
+        self, item_id: str, limit: int = 5
+    ) -> list[dict[str, Any]]:
+        """Items that went well with this one in rated outfits, best first."""
+        data = await self._request(
+            "GET", f"{API_LEARNING}/item-pairs/{_seg(item_id)}", params={"limit": limit}
+        )
+        return _coerce_list(data)
+
     async def async_user_profile(self) -> dict[str, Any]:
         return await self._request("GET", API_USER_PROFILE)
 

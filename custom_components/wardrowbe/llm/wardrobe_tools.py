@@ -612,3 +612,57 @@ def _pick(source: Any, keys: tuple[str, ...]) -> dict[str, Any]:
     if not isinstance(source, dict):
         return {}
     return {key: source[key] for key in keys if source.get(key) is not None}
+
+
+class GetItemPairingsTool(BaseWardrowbeTool):
+    name = "wardrowbe__get_item_pairings"
+    title = "Get item pairings"
+    annotations = llm.ToolAnnotations(
+        read_only=True, destructive=False, idempotent=True, open_world=False
+    )
+    description = (
+        "List the items that have gone well with one wardrobe item in outfits "
+        "the user rated, best first, with a compatibility score. Call this "
+        "when the user asks what goes with a specific item, or before "
+        "wardrowbe__create_outfit_suggestion to build around one item. Needs "
+        "item_id (from wardrowbe__get_wardrobe_items); optional limit (1-20, "
+        "default 5). An empty list means there is no rated history for that "
+        "item yet, so pick partners from wardrowbe__get_wardrobe_items instead."
+    )
+    parameters = vol.Schema(
+        {
+            vol.Required("item_id"): str,
+            vol.Optional("limit"): vol.All(int, vol.Range(min=1, max=20)),
+        }
+    )
+
+    async def async_call(
+        self,
+        hass: HomeAssistant,
+        tool_input: llm.ToolInput,
+        llm_context: llm.LLMContext,
+    ) -> llm.ToolResult:
+        runtime = self.runtime
+        if runtime is None:
+            return self.error("Wardrowbe is not loaded.")
+        args = tool_input.tool_args
+        item_id = str(args["item_id"])
+        try:
+            pairs = await runtime.client.async_item_pair_suggestions(
+                item_id, limit=args.get("limit") or 5
+            )
+        except WardrowbeApiError as err:
+            return self.error(f"get_item_pairings failed: {err}")
+        pairings = []
+        for pair in pairs:
+            item = pair.get("item") if isinstance(pair, dict) else None
+            if not isinstance(item, dict) or item.get("id") is None:
+                continue
+            compact = {
+                key: item[key]
+                for key in ("id", "name", "type", "primary_color")
+                if item.get(key) is not None
+            }
+            compact["compatibility_score"] = pair.get("compatibility_score")
+            pairings.append(compact)
+        return self.envelope(item_id=item_id, count=len(pairings), pairings=pairings)
