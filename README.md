@@ -40,6 +40,7 @@ All services accept a `config_entry_id` so multi-account setups can pick which W
 - `wardrowbe.submit_feedback` — rating, wore flag, notes.
 - `wardrowbe.log_wear` / `log_wash`.
 - `wardrowbe.archive_item` / `restore_item`.
+- `wardrowbe.add_item` — add an item from a photo: `image_path` (a JPEG, PNG, WebP or HEIC file in a folder listed in `allowlist_external_dirs`) or `image_url` (downloaded by Home Assistant), up to 20 MB. Optional `type`, `name`, `brand`, `primary_color`, `notes` and `skip_ai`; AI fills in what you leave out. Returns the new item.
 - `wardrowbe.test_notification`.
 
 ### Bus events
@@ -106,7 +107,7 @@ Open **Settings → Devices & Services → Wardrowbe → ⋮ → Reconfigure** o
 
 ### Voice assistant / LLM tools
 
-Each Wardrowbe account registers its own LLM API — **Wardrowbe — `<account title>`** — that you attach explicitly to a conversation agent; it's never enabled automatically. In **Settings → Voice assistants**, edit an agent, and pick it from the LLM API selector to give that agent seventeen tools covering outfit suggestions (including composing outfits itself when Wardrowbe's internal AI is off), wardrobe stats, wash tracking, and your saved body measurements and sizes. With multiple accounts, each gets its own selectable API. It's also reachable over MCP at `/api/mcp/wardrowbe__<entry_id>` with an HA admin access token, if you're driving Wardrowbe from an external MCP client instead of HA's own conversation agents.
+Each Wardrowbe account registers its own LLM API — **Wardrowbe — `<account title>`** — that you attach explicitly to a conversation agent; it's never enabled automatically. In **Settings → Voice assistants**, edit an agent, and pick it from the LLM API selector to give that agent eighteen tools covering outfit suggestions (including composing outfits itself when Wardrowbe's internal AI is off), wardrobe stats, wash tracking, adding items from a photo, and your saved body measurements and sizes. With multiple accounts, each gets its own selectable API. It's also reachable over MCP at `/api/mcp/wardrowbe__<entry_id>` with an HA admin access token, if you're driving Wardrowbe from an external MCP client instead of HA's own conversation agents.
 
 ## Automations
 

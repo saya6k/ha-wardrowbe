@@ -6,10 +6,14 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import llm
 
 from custom_components.wardrowbe.api import WardrowbeApiError
 from custom_components.wardrowbe.const import (
+    ATTR_IMAGE_PATH,
+    ATTR_IMAGE_URL,
     EVENT_GROUP_WASH,
     EVENT_GROUP_WEAR,
     ITEM_COLORS,
@@ -17,6 +21,7 @@ from custom_components.wardrowbe.const import (
     ITEM_SEASONS,
     VALID_OCCASIONS,
 )
+from custom_components.wardrowbe.item_images import async_add_item
 
 from .base_tool import BaseWardrowbeTool
 from .render import extract_image_url, svg_summary
@@ -674,3 +679,67 @@ class GetItemPairingsTool(BaseWardrowbeTool):
             compact["compatibility_score"] = pair.get("compatibility_score")
             pairings.append(compact)
         return self.envelope(item_id=item_id, count=len(pairings), pairings=pairings)
+
+
+
+class AddWardrobeItemTool(BaseWardrowbeTool):
+    name = "wardrowbe__add_wardrobe_item"
+    title = "Add wardrobe item"
+    annotations = llm.ToolAnnotations(
+        read_only=False, destructive=False, idempotent=False, open_world=True
+    )
+    description = (
+        "Add a clothing item to the user's wardrobe from a photo. Call this "
+        "only when the user gives you the photo: pass exactly one of "
+        "image_url (an http or https link to it) or image_path (a file on the "
+        "Home Assistant host, in a folder allowed by allowlist_external_dirs). "
+        "Never make up a URL or path. The photo must be JPEG, PNG, WebP or "
+        "HEIC, up to 20 MB. Optional type (e.g. shirt, jeans), name, brand, "
+        f"primary_color ({', '.join(ITEM_COLORS)}) and notes: pass only what "
+        "the user said, since Wardrowbe's AI tags the photo and fills in the "
+        "rest. skip_ai true adds it untagged for the user to edit later."
+    )
+    parameters = vol.Schema(
+        {
+            vol.Optional(ATTR_IMAGE_URL): str,
+            vol.Optional(ATTR_IMAGE_PATH): str,
+            vol.Optional("type"): str,
+            vol.Optional("name"): str,
+            vol.Optional("brand"): str,
+            vol.Optional("primary_color"): vol.In(ITEM_COLORS),
+            vol.Optional("notes"): str,
+            vol.Optional("skip_ai"): bool,
+        }
+    )
+
+    async def async_call(
+        self,
+        hass: HomeAssistant,
+        tool_input: llm.ToolInput,
+        llm_context: llm.LLMContext,
+    ) -> llm.ToolResult:
+        runtime = self.runtime
+        if runtime is None:
+            return self.error("Wardrowbe is not loaded.")
+        args = tool_input.tool_args
+        url, path = args.get(ATTR_IMAGE_URL), args.get(ATTR_IMAGE_PATH)
+        if bool(url) == bool(path):
+            return self.error("Pass exactly one of image_url or image_path.")
+        if url:
+            try:
+                cv.url(url)
+            except vol.Invalid:
+                return self.error(f"{url} is not an http or https URL.")
+        try:
+            item = await async_add_item(hass, runtime.client, args)
+        except HomeAssistantError as err:
+            return self.error(str(err))
+        await runtime.coordinator.async_request_refresh()
+        return self.envelope(
+            item={key: item.get(key) for key in ("id", "name", "type", "status")},
+            instruction=(
+                "The item was added. Confirm in one short sentence; if its "
+                "status is processing, add that Wardrowbe's AI is still "
+                "tagging it."
+            ),
+        )

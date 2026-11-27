@@ -383,6 +383,48 @@
         }
       }
     },
+    "add_item": {
+      "name": "아이템 추가",
+      "description": "파일 경로나 URL로 지정한 사진으로 옷장에 아이템을 추가합니다. 새 아이템을 반환합니다.",
+      "fields": {
+        "config_entry_id": {
+          "name": "계정",
+          "description": "작업할 Wardrowbe 계정(통합 항목)입니다."
+        },
+        "image_path": {
+          "name": "이미지 파일",
+          "description": "Home Assistant 호스트에 있는 JPEG, PNG, WebP, HEIC 사진의 경로입니다(최대 20MB). 해당 폴더가 allowlist_external_dirs에 있어야 합니다. 이미지 URL과 둘 중 하나만 지정합니다."
+        },
+        "image_url": {
+          "name": "이미지 URL",
+          "description": "Home Assistant가 내려받을 JPEG, PNG, WebP, HEIC 사진의 URL입니다(최대 20MB). 이미지 파일과 둘 중 하나만 지정합니다."
+        },
+        "type": {
+          "name": "유형",
+          "description": "옷의 유형입니다. 예: shirt, jeans. 비워 두면 AI가 감지합니다."
+        },
+        "name": {
+          "name": "이름",
+          "description": "아이템 이름입니다(선택)."
+        },
+        "brand": {
+          "name": "브랜드",
+          "description": "아이템의 브랜드입니다."
+        },
+        "primary_color": {
+          "name": "메인 색상",
+          "description": "주된 색상입니다. 예: navy. 비워 두면 AI가 감지합니다."
+        },
+        "notes": {
+          "name": "메모",
+          "description": "아이템과 함께 저장할 자유 형식 메모입니다."
+        },
+        "skip_ai": {
+          "name": "AI 분석 건너뛰기",
+          "description": "AI가 사진을 태깅하지 않고 임시 값으로 추가합니다. 세부 정보는 나중에 수정합니다."
+        }
+      }
+    },
     "test_notification": {
       "name": "알림 테스트",
       "description": "설정된 알림 채널로 테스트 알림을 보냅니다.",

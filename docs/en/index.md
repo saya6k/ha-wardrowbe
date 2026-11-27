@@ -31,6 +31,7 @@ All services accept a `config_entry_id` so multi-account setups can pick which W
 - `wardrowbe.submit_feedback` — rating, wore flag, notes.
 - `wardrowbe.log_wear` / `log_wash`.
 - `wardrowbe.archive_item` / `restore_item`.
+- `wardrowbe.add_item` — add an item from a photo: `image_path` (a JPEG, PNG, WebP or HEIC file in a folder listed in `allowlist_external_dirs`) or `image_url` (downloaded by Home Assistant), up to 20 MB. Optional `type`, `name`, `brand`, `primary_color`, `notes` and `skip_ai`; AI fills in what you leave out. Returns the new item.
 - `wardrowbe.test_notification`.
 
 ### Bus events

@@ -58,6 +58,8 @@ _JWT_REFRESH_LEEWAY = timedelta(hours=1)
 _DEFAULT_JWT_TTL_SECONDS = 6 * 24 * 3600  # 6 days; Wardrowbe defaults to 7
 # Images are proxied through HA, so cap what one request can pull.
 MAX_IMAGE_BYTES = 20 * 1024 * 1024
+# Uploads carry a photo of up to 20 MB, more than DEFAULT_TIMEOUT allows on a slow link.
+_UPLOAD_TIMEOUT = 120
 
 
 class WardrowbeApiError(Exception):
@@ -419,6 +421,18 @@ class WardrowbeClient:
     async def async_restore_item(self, item_id: str) -> dict[str, Any]:
         return await self._request("POST", f"{API_ITEMS}/{_seg(item_id)}/restore")
 
+    async def async_create_item(
+        self, image: bytes, filename: str, content_type: str, fields: dict[str, str]
+    ) -> dict[str, Any]:
+        def form() -> aiohttp.FormData:
+            data = aiohttp.FormData()
+            data.add_field("image", image, filename=filename, content_type=content_type)
+            for key, value in fields.items():
+                data.add_field(key, value)
+            return data
+
+        return await self._request("POST", API_ITEMS, form=form)
+
     async def async_test_notification(self, setting_id: str) -> dict[str, Any]:
         return await self._request(
             "POST", f"{API_NOTIFICATIONS_SETTINGS}/{_seg(setting_id)}/test"
@@ -530,6 +544,7 @@ class WardrowbeClient:
         *,
         json: Any | None = None,
         params: dict[str, Any] | None = None,
+        form: Callable[[], aiohttp.FormData] | None = None,
     ) -> Any:
         last_status: int | None = None
         last_body: str | None = None
@@ -542,9 +557,14 @@ class WardrowbeClient:
                     self._url(path),
                     json=json,
                     params=params,
+                    # Built per attempt: a FormData can only be sent once, and
+                    # a 401 sends the request again.
+                    data=form() if form else None,
                     headers={"Authorization": f"Bearer {jwt}"},
                     ssl=self._verify_ssl,
-                    timeout=aiohttp.ClientTimeout(total=DEFAULT_TIMEOUT),
+                    timeout=aiohttp.ClientTimeout(
+                        total=_UPLOAD_TIMEOUT if form else DEFAULT_TIMEOUT
+                    ),
                 ) as resp:
                     if resp.status == 401 and attempt == 0:
                         rejected = generation

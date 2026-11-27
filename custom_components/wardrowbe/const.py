@@ -93,6 +93,7 @@ SERVICE_LOG_WEAR: Final = "log_wear"
 SERVICE_LOG_WASH: Final = "log_wash"
 SERVICE_ARCHIVE_ITEM: Final = "archive_item"
 SERVICE_RESTORE_ITEM: Final = "restore_item"
+SERVICE_ADD_ITEM: Final = "add_item"
 SERVICE_TEST_NOTIFICATION: Final = "test_notification"
 SERVICE_GET_SUMMARY: Final = "get_summary"
 
@@ -116,6 +117,12 @@ ATTR_INCLUDE_STATUSES: Final = "include_statuses"
 ATTR_TEMPERATURE: Final = "temperature"
 ATTR_WEATHER_CONDITION: Final = "weather_condition"
 ATTR_PRECIPITATION_CHANCE: Final = "precipitation_chance"
+ATTR_IMAGE_PATH: Final = "image_path"
+ATTR_IMAGE_URL: Final = "image_url"
+ATTR_TYPE: Final = "type"
+ATTR_BRAND: Final = "brand"
+ATTR_PRIMARY_COLOR: Final = "primary_color"
+ATTR_SKIP_AI: Final = "skip_ai"
 
 # Valid persistent outfit statuses (rendered in entities, dashboards, …).
 # Note: ``feedback_submitted`` is an *event type*, not a status.

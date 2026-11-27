@@ -383,6 +383,48 @@
         }
       }
     },
+    "add_item": {
+      "name": "Stück hinzufügen",
+      "description": "Fügt der Garderobe ein Kleidungsstück aus einem Foto hinzu, angegeben als Dateipfad oder URL. Gibt das neue Stück zurück.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Konto",
+          "description": "Das Wardrowbe-Konto (Konfigurationseintrag), auf das sich die Aktion bezieht."
+        },
+        "image_path": {
+          "name": "Bilddatei",
+          "description": "Pfad zu einem JPEG-, PNG-, WebP- oder HEIC-Foto auf dem Home-Assistant-Host, höchstens 20 MB. Sein Ordner muss in allowlist_external_dirs stehen. Entweder dies oder Bild-URL angeben."
+        },
+        "image_url": {
+          "name": "Bild-URL",
+          "description": "URL eines JPEG-, PNG-, WebP- oder HEIC-Fotos, höchstens 20 MB, das Home Assistant herunterlädt. Entweder dies oder Bilddatei angeben."
+        },
+        "type": {
+          "name": "Typ",
+          "description": "Die Art des Kleidungsstücks, z. B. shirt oder jeans. Die KI erkennt ihn, wenn leer."
+        },
+        "name": {
+          "name": "Name",
+          "description": "Optionaler Name des Stücks."
+        },
+        "brand": {
+          "name": "Marke",
+          "description": "Die Marke des Stücks."
+        },
+        "primary_color": {
+          "name": "Hauptfarbe",
+          "description": "Die Hauptfarbe, z. B. navy. Die KI erkennt sie, wenn leer."
+        },
+        "notes": {
+          "name": "Notizen",
+          "description": "Freitext-Notizen, die mit dem Stück gespeichert werden."
+        },
+        "skip_ai": {
+          "name": "KI-Analyse überspringen",
+          "description": "Mit Platzhalterwerten hinzufügen, statt das Foto von der KI taggen zu lassen; Details später bearbeiten."
+        }
+      }
+    },
     "test_notification": {
       "name": "Testbenachrichtigung",
       "description": "Sendet eine Testbenachrichtigung über eine eingerichtete Einstellung.",

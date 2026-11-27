@@ -383,6 +383,48 @@
         }
       }
     },
+    "add_item": {
+      "name": "Add item",
+      "description": "Add a clothing item to the wardrobe from a photo, given as a file path or a URL. Returns the new item.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "The Wardrowbe account (config entry) to act on."
+        },
+        "image_path": {
+          "name": "Image file",
+          "description": "Path to a JPEG, PNG, WebP or HEIC photo on the Home Assistant host, up to 20 MB. Its folder must be listed in allowlist_external_dirs. Use this or Image URL."
+        },
+        "image_url": {
+          "name": "Image URL",
+          "description": "URL of a JPEG, PNG, WebP or HEIC photo, up to 20 MB, that Home Assistant downloads. Use this or Image file."
+        },
+        "type": {
+          "name": "Type",
+          "description": "The clothing type, e.g. shirt or jeans. AI will detect it if empty."
+        },
+        "name": {
+          "name": "Name",
+          "description": "Optional name for the item."
+        },
+        "brand": {
+          "name": "Brand",
+          "description": "The brand of the item."
+        },
+        "primary_color": {
+          "name": "Primary Color",
+          "description": "The main color, e.g. navy. AI will detect it if empty."
+        },
+        "notes": {
+          "name": "Notes",
+          "description": "Free-text notes saved with the item."
+        },
+        "skip_ai": {
+          "name": "Skip AI analysis",
+          "description": "Add with placeholder values instead of having AI tag the photo; edit details later."
+        }
+      }
+    },
     "test_notification": {
       "name": "Test notification",
       "description": "Send a test notification through a configured setting.",

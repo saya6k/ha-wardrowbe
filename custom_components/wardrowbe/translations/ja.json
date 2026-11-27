@@ -383,6 +383,48 @@
         }
       }
     },
+    "add_item": {
+      "name": "アイテムを追加",
+      "description": "ファイルパスまたは URL で指定した写真から、ワードローブにアイテムを追加します。新しいアイテムを返します。",
+      "fields": {
+        "config_entry_id": {
+          "name": "アカウント",
+          "description": "操作対象の Wardrowbe アカウント（設定エントリ）。"
+        },
+        "image_path": {
+          "name": "画像ファイル",
+          "description": "Home Assistant ホスト上の JPEG、PNG、WebP、HEIC 写真のパス（20 MB まで）。フォルダーが allowlist_external_dirs に含まれている必要があります。これか画像 URL のどちらかを指定します。"
+        },
+        "image_url": {
+          "name": "画像 URL",
+          "description": "Home Assistant がダウンロードする JPEG、PNG、WebP、HEIC 写真の URL（20 MB まで）。これか画像ファイルのどちらかを指定します。"
+        },
+        "type": {
+          "name": "タイプ",
+          "description": "衣類のタイプ。例: shirt、jeans。空欄ならAIが検出します。"
+        },
+        "name": {
+          "name": "名前",
+          "description": "アイテムの名前（任意）。"
+        },
+        "brand": {
+          "name": "ブランド",
+          "description": "アイテムのブランド。"
+        },
+        "primary_color": {
+          "name": "メインカラー",
+          "description": "メインの色。例: navy。空欄ならAIが検出します。"
+        },
+        "notes": {
+          "name": "メモ",
+          "description": "アイテムと一緒に保存する自由記述のメモ。"
+        },
+        "skip_ai": {
+          "name": "AI解析をスキップ",
+          "description": "AIに写真をタグ付けさせず、仮の値で追加します。詳細は後から編集します。"
+        }
+      }
+    },
     "test_notification": {
       "name": "テスト通知",
       "description": "設定済みの通知設定でテスト通知を送信します。",

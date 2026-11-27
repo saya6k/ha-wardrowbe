@@ -31,6 +31,7 @@
 - `wardrowbe.submit_feedback` — 평점, 착용 여부, 메모.
 - `wardrowbe.log_wear` / `log_wash`.
 - `wardrowbe.archive_item` / `restore_item`.
+- `wardrowbe.add_item` — 사진으로 아이템 추가: `image_path`(`allowlist_external_dirs`에 있는 폴더의 JPEG, PNG, WebP, HEIC 파일) 또는 `image_url`(Home Assistant가 내려받음), 최대 20MB. 선택 항목 `type`, `name`, `brand`, `primary_color`, `notes`, `skip_ai`; 비운 값은 AI가 채움. 새 아이템을 응답으로 반환.
 - `wardrowbe.test_notification`.
 
 ### 버스 이벤트

@@ -383,6 +383,48 @@
         }
       }
     },
+    "add_item": {
+      "name": "Ajouter un article",
+      "description": "Ajoute un vêtement à la garde-robe à partir d'une photo, donnée par un chemin de fichier ou une URL. Renvoie le nouvel article.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Compte",
+          "description": "Le compte Wardrowbe (entrée de configuration) concerné."
+        },
+        "image_path": {
+          "name": "Fichier image",
+          "description": "Chemin d'une photo JPEG, PNG, WebP ou HEIC sur l'hôte Home Assistant, 20 Mo au maximum. Son dossier doit figurer dans allowlist_external_dirs. Utilisez ceci ou URL de l'image."
+        },
+        "image_url": {
+          "name": "URL de l'image",
+          "description": "URL d'une photo JPEG, PNG, WebP ou HEIC, 20 Mo au maximum, que Home Assistant télécharge. Utilisez ceci ou Fichier image."
+        },
+        "type": {
+          "name": "Type",
+          "description": "Le type de vêtement, par ex. shirt ou jeans. L'IA le détectera si vide."
+        },
+        "name": {
+          "name": "Nom",
+          "description": "Nom facultatif de l'article."
+        },
+        "brand": {
+          "name": "Marque",
+          "description": "La marque de l'article."
+        },
+        "primary_color": {
+          "name": "Couleur principale",
+          "description": "La couleur principale, par ex. navy. L'IA la détectera si vide."
+        },
+        "notes": {
+          "name": "Notes",
+          "description": "Notes libres enregistrées avec l'article."
+        },
+        "skip_ai": {
+          "name": "Ignorer l'analyse IA",
+          "description": "Ajouter avec des valeurs provisoires au lieu de laisser l'IA étiqueter la photo ; modifier les détails plus tard."
+        }
+      }
+    },
     "test_notification": {
       "name": "Notification de test",
       "description": "Envoie une notification de test via un réglage configuré.",

@@ -383,6 +383,48 @@
         }
       }
     },
+    "add_item": {
+      "name": "新增單品",
+      "description": "以檔案路徑或 URL 指定的照片將單品新增到衣櫥。傳回新單品。",
+      "fields": {
+        "config_entry_id": {
+          "name": "帳戶",
+          "description": "要操作的 Wardrowbe 帳戶（設定項目）。"
+        },
+        "image_path": {
+          "name": "圖片檔案",
+          "description": "Home Assistant 主機上 JPEG、PNG、WebP 或 HEIC 照片的路徑，最大 20 MB。其所在資料夾必須列在 allowlist_external_dirs 中。與圖片 URL 二選一。"
+        },
+        "image_url": {
+          "name": "圖片 URL",
+          "description": "由 Home Assistant 下載的 JPEG、PNG、WebP 或 HEIC 照片的 URL，最大 20 MB。與圖片檔案二選一。"
+        },
+        "type": {
+          "name": "類型",
+          "description": "衣物類型，例如 shirt 或 jeans。留空則由 AI 偵測。"
+        },
+        "name": {
+          "name": "名稱",
+          "description": "單品名稱（選填）。"
+        },
+        "brand": {
+          "name": "品牌",
+          "description": "單品的品牌。"
+        },
+        "primary_color": {
+          "name": "主色",
+          "description": "主要顏色，例如 navy。留空則由 AI 偵測。"
+        },
+        "notes": {
+          "name": "備註",
+          "description": "與單品一起儲存的自由文字備註。"
+        },
+        "skip_ai": {
+          "name": "略過 AI 分析",
+          "description": "以預留值新增，不讓 AI 為照片加上標籤；稍後編輯詳情。"
+        }
+      }
+    },
     "test_notification": {
       "name": "測試通知",
       "description": "透過已設定的通知設定傳送測試通知。",
