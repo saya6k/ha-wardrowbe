@@ -93,6 +93,13 @@
         "full_day": "Tutto il giorno"
       }
     },
+    "weather_conditions": {
+      "options": {
+        "sunny": "Sereno",
+        "cloudy": "Nuvoloso",
+        "rainy": "Pioggia"
+      }
+    },
     "common_colors": {
       "options": {
         "beige": "Beige",
@@ -195,6 +202,18 @@
         "time_of_day": {
           "name": "Momento della giornata",
           "description": "Quando verrà indossato l'outfit: morning, afternoon, evening, night o full_day."
+        },
+        "temperature": {
+          "name": "Temperatura",
+          "description": "Sostituisce il meteo locale con questa temperatura in °C."
+        },
+        "weather_condition": {
+          "name": "Condizioni",
+          "description": "Sostituisce le condizioni meteo. Richiede una temperatura."
+        },
+        "precipitation_chance": {
+          "name": "Probabilità di pioggia",
+          "description": "Probabilità di pioggia in percentuale. Se vuota, usa il valore abituale della condizione (Pioggia 80, Nuvoloso 30, Sereno 10). Richiede una temperatura."
         }
       }
     },

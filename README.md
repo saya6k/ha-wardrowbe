@@ -34,7 +34,7 @@ A Home Assistant custom component for [Wardrowbe](https://github.com/Anyesh/ward
 
 All services accept a `config_entry_id` so multi-account setups can pick which Wardrowbe account to act on.
 
-- `wardrowbe.suggest_outfit` — generate a new outfit recommendation (returns the outfit as a response variable).
+- `wardrowbe.suggest_outfit` — generate a new outfit recommendation (returns the outfit as a response variable). Optional `temperature` (°C), `weather_condition` and `precipitation_chance` override the weather at your location.
 - `wardrowbe.create_outfit_suggestion` — save an outfit you composed (`item_ids` + `occasion`) as a pending suggestion; works even when Wardrowbe's internal AI is disabled (returns the outfit as a response variable).
 - `wardrowbe.accept_outfit` / `reject_outfit` / `skip_outfit` — `outfit_id` optional; defaults to the latest pending outfit on that account.
 - `wardrowbe.submit_feedback` — rating, wore flag, notes.

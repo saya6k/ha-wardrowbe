@@ -5,6 +5,8 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import Final
 
+import voluptuous as vol
+
 DOMAIN: Final = "wardrowbe"
 
 LLM_API_NAME: Final = "Wardrowbe"
@@ -110,6 +112,9 @@ ATTR_DATE: Final = "date"
 ATTR_SETTING_ID: Final = "setting_id"
 ATTR_EXCLUDE_STATUSES: Final = "exclude_statuses"
 ATTR_INCLUDE_STATUSES: Final = "include_statuses"
+ATTR_TEMPERATURE: Final = "temperature"
+ATTR_WEATHER_CONDITION: Final = "weather_condition"
+ATTR_PRECIPITATION_CHANCE: Final = "precipitation_chance"
 
 # Valid persistent outfit statuses (rendered in entities, dashboards, …).
 # Note: ``feedback_submitted`` is an *event type*, not a status.
@@ -196,3 +201,12 @@ VALID_TIME_OF_DAY: Final = (
     "night",
     "full_day",
 )
+
+# The conditions Wardrowbe's own weather override offers, with the rain
+# chance its web UI sends for each. Rain chance is what actually moves the
+# scoring (rain layers above a threshold), so a bare "rainy" needs one.
+WEATHER_CONDITION_PRECIPITATION: Final = {"sunny": 10, "cloudy": 30, "rainy": 80}
+WEATHER_CONDITIONS: Final = tuple(WEATHER_CONDITION_PRECIPITATION)
+# Shared by the suggest_outfit service and LLM tool schemas.
+VALID_TEMPERATURE_C: Final = vol.All(vol.Coerce(float), vol.Range(min=-50, max=60))
+VALID_PRECIPITATION_CHANCE: Final = vol.All(vol.Coerce(int), vol.Range(min=0, max=100))

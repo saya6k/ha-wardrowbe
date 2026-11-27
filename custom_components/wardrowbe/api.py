@@ -41,6 +41,7 @@ from .const import (
     API_OUTFITS,
     API_USER_PROFILE,
     DEFAULT_TIMEOUT,
+    WEATHER_CONDITION_PRECIPITATION,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -500,6 +501,24 @@ class WardrowbeClient:
         raise WardrowbeApiError(
             f"{method} {path} → {last_status}: {last_body}", status=last_status
         )
+
+
+def weather_override_payload(
+    temperature: float | None,
+    condition: str | None = None,
+    precipitation_chance: int | None = None,
+) -> dict[str, Any] | None:
+    """Wardrowbe's weather_override body, or None when no temperature is set."""
+    if temperature is None:
+        return None
+    payload: dict[str, Any] = {"temperature": float(temperature)}
+    if condition:
+        payload["condition"] = condition
+    if precipitation_chance is None:
+        precipitation_chance = WEATHER_CONDITION_PRECIPITATION.get(condition or "")
+    if precipitation_chance is not None:
+        payload["precipitation_chance"] = int(precipitation_chance)
+    return payload
 
 
 def _seg(value: str) -> str:

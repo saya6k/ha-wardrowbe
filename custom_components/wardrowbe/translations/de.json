@@ -93,6 +93,13 @@
         "full_day": "Ganzer Tag"
       }
     },
+    "weather_conditions": {
+      "options": {
+        "sunny": "Klar",
+        "cloudy": "Bewölkt",
+        "rainy": "Regen"
+      }
+    },
     "common_colors": {
       "options": {
         "beige": "Beige",
@@ -195,6 +202,18 @@
         "time_of_day": {
           "name": "Tageszeit",
           "description": "Wann das Outfit getragen wird: morning, afternoon, evening, night oder full_day."
+        },
+        "temperature": {
+          "name": "Temperatur",
+          "description": "Ersetzt das Wetter am Standort durch diese Temperatur in °C."
+        },
+        "weather_condition": {
+          "name": "Bedingungen",
+          "description": "Überschreibt die Wetterbedingungen. Erfordert eine Temperatur."
+        },
+        "precipitation_chance": {
+          "name": "Regenwahrscheinlichkeit",
+          "description": "Regenwahrscheinlichkeit in Prozent. Ohne Angabe gilt der übliche Wert der Bedingung (Regen 80, Bewölkt 30, Klar 10). Erfordert eine Temperatur."
         }
       }
     },
