@@ -127,6 +127,7 @@ async def test_hook_returns_tool_set_for_loaded_entry_none_after_unload(
         "wardrowbe__log_wear",
         "wardrowbe__rate_outfit",
         "wardrowbe__get_style_insights",
+        "wardrowbe__get_item_pairings",
     }
 
     assert await hass.config_entries.async_unload(dev_mode_entry.entry_id)
@@ -153,7 +154,7 @@ async def test_api_instance_end_to_end(
 
     # 12 wardrowbe tools + HA core's own built-in GetDateTimeTool, which
     # async_get_api injects into every API instance.
-    assert len(instance.tools) == 17
+    assert len(instance.tools) == 18
     assert "wardrobe" in instance.api_prompt.lower()
 
 
@@ -628,4 +629,33 @@ async def test_get_style_insights_tool_trims_payload(hass: HomeAssistant) -> Non
         async_learning_insights=AsyncMock(side_effect=WardrowbeApiError("boom"))
     )
     result = await _call_tool(hass, GetStyleInsightsTool, runtime, {})
+    assert result.error
+
+
+@requires_llm_integration
+async def test_get_item_pairings_tool(hass: HomeAssistant) -> None:
+    from custom_components.wardrowbe.llm.wardrobe_tools import GetItemPairingsTool
+
+    pair_suggestions = AsyncMock(
+        return_value=[
+            {
+                "item": {"id": "i2", "name": "Chinos", "type": "pants", "thumbnail_path": "/t"},
+                "compatibility_score": 0.9,
+            },
+            {"item": None, "compatibility_score": 0.1},
+            "not-a-dict",
+        ]
+    )
+    runtime = _tool_runtime(async_item_pair_suggestions=pair_suggestions)
+    result = await _call_tool(hass, GetItemPairingsTool, runtime, {"item_id": "i1", "limit": 3})
+    assert not result.error
+    assert result.data["pairings"] == [
+        {"id": "i2", "name": "Chinos", "type": "pants", "compatibility_score": 0.9}
+    ]
+    pair_suggestions.assert_awaited_once_with("i1", limit=3)
+
+    runtime = _tool_runtime(
+        async_item_pair_suggestions=AsyncMock(side_effect=WardrowbeApiError("boom"))
+    )
+    result = await _call_tool(hass, GetItemPairingsTool, runtime, {"item_id": "i1"})
     assert result.error
